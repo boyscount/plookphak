@@ -2,6 +2,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RoundButton } from '../components/AppShell'
+import { catColorOf } from '../components/avatars'
 import { TierChip } from '../components/Badges'
 import type { FloorInfo } from '../components/cat3d/Building'
 import { BackIcon } from '../components/icons'
@@ -13,15 +14,6 @@ import { useLoans, useNow, useProfiles } from '../lib/queries'
 
 const Building = lazy(() => import('../components/cat3d/Building'))
 const FLOOR_H = 1.7 // ต้องตรงกับ Building.tsx
-
-const CAT_COLOR: Record<string, string> = {
-  cat_finger: '#c9c3d6',
-  cat_side_eye: '#ffb347',
-  cat_shock: '#2e2a36',
-  shiba_derp: '#f2a65a',
-  pug_sleepy: '#e8c9a0',
-  frog_meh: '#7ccf6b',
-}
 
 const MOOD_RANK = { sad: 0, hungry: 1, ok: 2, happy: 3 }
 
@@ -51,7 +43,7 @@ export function CatBuilding() {
   const floors: FloorInfo[] = rows.map((r) => ({
     id: r.person.id,
     name: r.person.aka,
-    color: CAT_COLOR[r.person.avatar ?? ''] ?? '#ffb347',
+    color: catColorOf(r.person.avatar),
     mood: r.stats.mood,
     fullness: r.stats.fullness,
     balance: fmtBaht(r.balance),

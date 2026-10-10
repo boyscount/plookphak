@@ -2,6 +2,7 @@
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { RoundButton } from '../components/AppShell'
+import { catColorOf } from '../components/avatars'
 import { TierChip } from '../components/Badges'
 import type { CatAction } from '../components/cat3d/Cat'
 import { BackIcon } from '../components/icons'
@@ -13,15 +14,6 @@ import { fmtBaht } from '../lib/format'
 import { useLoans, useNow, useProfile } from '../lib/queries'
 
 const CatRoom = lazy(() => import('../components/cat3d/CatRoom'))
-
-const CAT_COLOR: Record<string, string> = {
-  cat_finger: '#c9c3d6',
-  cat_side_eye: '#ffb347',
-  cat_shock: '#2e2a36',
-  shiba_derp: '#f2a65a',
-  pug_sleepy: '#e8c9a0',
-  frog_meh: '#7ccf6b',
-}
 
 function hasWebGL() {
   try {
@@ -61,7 +53,7 @@ export function CatHome() {
   if (isLoading || !owner) return <Spinner />
   const s = catStats(loans ?? [], now)
   const line = catLine(s, owner.aka)
-  const color = CAT_COLOR[owner.avatar ?? ''] ?? '#ffb347'
+  const color = catColorOf(owner.avatar)
   const canFeed = !isStaff && s.fullness < 100
   const act = (kind: NonNullable<CatAction>['kind']) => setAction({ kind, at: performance.now() })
 

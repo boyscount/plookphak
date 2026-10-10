@@ -18,6 +18,10 @@ export const COVERS: Theme[] = [
   { id: 'night', label: 'ท้องฟ้ายามค่ำ', base: 'linear-gradient(170deg,#070b2a 0%,#1a1550 60%,#3a2380 100%)', blobs: ['#3b5bdb', '#9b5de5', '#0ea5e9'], ink: 'light', alwaysStars: true },
   { id: 'ocean', label: 'ทะเลเขตร้อน', base: 'linear-gradient(160deg,#055a8c 0%,#0b8fb3 55%,#36c9c6 100%)', blobs: ['#7cf5d6', '#3b82f6', '#a5f3fc'], ink: 'light' },
   { id: 'sunset', label: 'พระอาทิตย์ตก', base: 'linear-gradient(160deg,#5b1a6e 0%,#d9467a 55%,#ff9f5a 100%)', blobs: ['#ffd36e', '#ff6fa0', '#8b5cf6'], ink: 'light' },
+  { id: 'sakura', label: 'ซากุระ', base: 'linear-gradient(160deg,#ffdbe9 0%,#ffc2d9 50%,#fff3f8 100%)', blobs: ['#ff9fc6', '#ffffff', '#ffd1e3'], ink: 'dark' },
+  { id: 'matcha', label: 'มัทฉะ', base: 'linear-gradient(160deg,#4f7a3a 0%,#8fb06a 55%,#dfe8c4 100%)', blobs: ['#c8e09a', '#6f9a4a', '#fff8dc'], ink: 'light' },
+  { id: 'neon', label: 'นีออนไซเบอร์', base: 'linear-gradient(160deg,#0a0618 0%,#1c0b3a 55%,#08263d 100%)', blobs: ['#ff2fd6', '#00e5ff', '#7c3aed'], ink: 'light', alwaysStars: true },
+  { id: 'galaxy', label: 'กาแล็กซี่', base: 'radial-gradient(120% 140% at 70% 0%,#5b2a9e 0%,#24104f 45%,#05020f 100%)', blobs: ['#ff7ad9', '#4f46e5', '#22d3ee'], ink: 'light', alwaysStars: true },
 ]
 
 export function coverById(id: string | null | undefined) {
