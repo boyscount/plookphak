@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Avatar, ErrorText, Field, Input, Pill } from '../components/ui'
+import { Avatar, ErrorText, Field, Input, Logo, Pill } from '../components/ui'
 import { errorText, supabase, usernameToEmail } from '../lib/supabase'
 
 export function Login() {
@@ -20,7 +20,10 @@ export function Login() {
   return (
     <div className="min-h-dvh">
       <div className="pt-safe h-52 bg-gradient-to-b from-[#5a2fb8] to-[#8b4cff] px-6">
-        <p className="pt-10 text-center text-3xl font-bold text-white">🌱 Plookphak</p>
+        <p className="flex items-center justify-center gap-2 pt-10 text-3xl font-bold text-white">
+          <Logo className="size-11" />
+          Plookphak
+        </p>
         <p className="mt-1 text-center text-white/85">บันทึกยืม–คืน ไม่ต้องจดกระดาษ</p>
       </div>
       <div className="mx-auto -mt-14 max-w-sm px-4">

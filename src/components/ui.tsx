@@ -104,6 +104,21 @@ export function Tabs<T extends string>({
   )
 }
 
+/** โลโก้: สมุดจด + เหรียญบาท (ใช้ลายเดียวกับ public/favicon.svg) */
+export function Logo({ className = 'size-10' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 64 64" className={className} aria-hidden>
+      <rect x="15" y="7" width="34" height="44" rx="5" fill="#fff" stroke="#0e0e10" strokeWidth="4" />
+      <path d="M23 18h18M23 26h18M23 34h10" stroke="#d9d6e3" strokeWidth="4" strokeLinecap="round" />
+      {[13, 23, 33, 43].map((y) => (
+        <rect key={y} x="10" y={y} width="10" height="5" rx="2.5" fill="#a372ff" stroke="#0e0e10" strokeWidth="2.5" />
+      ))}
+      <circle cx="45" cy="45" r="13" fill="#ffc95c" stroke="#0e0e10" strokeWidth="4" />
+      <path d="M41 38v14M41 38h5a3.5 3.5 0 0 1 0 7h-5M41 45h6a3.5 3.5 0 0 1 0 7h-6M44 35v20" fill="none" stroke="#0e0e10" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 /** ภาพประกอบตอนว่าง: สมุดจดกับดินสอบนพื้นม่วง */
 export function NotebookArt({ className = 'w-56' }: { className?: string }) {
   return (
