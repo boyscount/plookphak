@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { ProfileHeader } from '../components/AppShell'
 import { LoanCard, StateBadge } from '../components/LoanCard'
 import { PaymentList, SlipSheet } from '../components/Payments'
-import { EmptyState, Pill, Row, Spinner, Tabs, Card } from '../components/ui'
+import { EmptyState, NotebookArt, Pill, Row, Spinner, Tabs, Card } from '../components/ui'
 import { ListIcon, SlipIcon } from '../components/icons'
 import { useAuth } from '../lib/auth'
 import { fmtBaht } from '../lib/format'
@@ -75,7 +75,7 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
               ))}
             </div>
           ) : (
-            <EmptyState title="ไม่มียอดค้างชำระ" subtitle="เงียบจังเลย…เงียบไปแล้ว…" />
+            <EmptyLoanCard />
           )
         ) : tab === 'history' ? (
           payments.length ? (
@@ -91,7 +91,7 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
                   <span className="text-lg font-bold">{fmtBaht(Number(loan.principal))}</span>
                   <StateBadge state={s.state} />
                 </div>
-                <Row label="ยอดรวม" value={fmtBaht(s.total)} />
+                <Row label="จำนวนเงินที่ต้องชำระ" value={fmtBaht(s.total)} />
                 <Row label="คงเหลือ" value={fmtBaht(s.balance)} />
               </Card>
             ))}
@@ -103,5 +103,36 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
 
       <SlipSheet loans={all} open={payOpen} onClose={() => setPayOpen(false)} />
     </div>
+  )
+}
+
+const LOAN_FIELDS = [
+  'จำนวนเงินที่ยืม',
+  'วันที่ยืม',
+  'วันที่เริ่มคิดดอกเบี้ย',
+  'ดอกเบี้ยต่อวัน',
+  'รวมดอกเบี้ยที่ต้องชำระ',
+  'วันครบกำหนดชำระ',
+  'ค่าปรับต่อชั่วโมง',
+  'จำนวนเงินที่ต้องชำระ',
+]
+
+/** ไม่มียอดค้าง: แสดงหัวข้อของรายการยืมไว้ให้รู้ว่าจะเห็นอะไรบ้าง */
+function EmptyLoanCard() {
+  return (
+    <Card>
+      <div className="flex items-center gap-3">
+        <NotebookArt className="w-20 shrink-0" />
+        <div>
+          <p className="text-lg font-bold">ไม่มียอดค้างชำระ</p>
+          <p className="text-sm text-muted">เมื่อมีรายการยืม ข้อมูลจะแสดงตรงนี้</p>
+        </div>
+      </div>
+      <div className="mt-3 divide-y divide-[#0000000d] text-[15px]">
+        {LOAN_FIELDS.map((f) => (
+          <Row key={f} label={f} value={<span className="text-muted">–</span>} />
+        ))}
+      </div>
+    </Card>
   )
 }

@@ -78,15 +78,15 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
       {live && <Countdown loan={loan} now={now} />}
 
       <div className="divide-y divide-[#0000000d] text-[15px]">
-        <Row label="เงินที่ยืม" value={fmtBaht(Number(loan.principal))} />
+        <Row label="จำนวนเงินที่ยืม" value={fmtBaht(Number(loan.principal))} />
         <Row label="วันที่ยืม" value={fmtDate(loan.borrowed_on)} />
-        <Row label="วันที่เริ่มคิดดอก" value={fmtDate(loan.interest_start_on)} />
-        <Row label="ดอกต่อวัน" value={fmtBaht(Number(loan.daily_interest))} />
-        <Row label={`รวมดอก (${s.days} วัน)`} value={fmtBaht(s.interest)} />
-        <Row label="วันครบชำระ" value={fmtDateTime(loan.due_at)} />
+        <Row label="วันที่เริ่มคิดดอกเบี้ย" value={fmtDate(loan.interest_start_on)} />
+        <Row label="ดอกเบี้ยต่อวัน" value={fmtBaht(Number(loan.daily_interest))} />
+        <Row label="รวมดอกเบี้ยที่ต้องชำระ" value={<>{fmtBaht(s.interest)} <span className="text-sm text-muted">({s.days} วัน)</span></>} />
+        <Row label="วันครบกำหนดชำระ" value={fmtDateTime(loan.due_at)} />
         <Row label="ค่าปรับต่อชั่วโมง" value={fmtBaht(Number(loan.hourly_penalty))} />
         {s.hours > 0 && <Row label={`ค่าปรับ (${s.hours} ชม.)`} value={<span className="text-danger">{fmtBaht(s.penalty)}</span>} />}
-        <Row label="ยอดรวมทั้งหมด" value={fmtBaht(s.total)} />
+        <Row label="จำนวนเงินที่ต้องชำระ" value={fmtBaht(s.total)} />
         {s.approved > 0 && <Row label="ชำระแล้ว" value={<span className="text-ok">− {fmtBaht(s.approved)}</span>} />}
         {s.pending > 0 && <Row label="รอตรวจสลิป" value={<span className="text-sky-700">− {fmtBaht(s.pending)}</span>} />}
         <Row label="คงเหลือ" value={fmtBaht(s.balance)} strong />

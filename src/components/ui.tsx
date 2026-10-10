@@ -90,25 +90,39 @@ export function Tabs<T extends string>({
   )
 }
 
-/** ภาพประกอบตอนว่าง แบบม้วนฟิล์มบนพื้นม่วง */
+/** ภาพประกอบตอนว่าง: สมุดจดกับดินสอบนพื้นม่วง */
+export function NotebookArt({ className = 'w-56' }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 220 160" className={className} aria-hidden>
+      <path d="M40 40 C70 10 170 5 200 20 L185 60 L200 75 C170 120 110 130 70 120 Z" fill="#8a4bff" />
+      <g transform="rotate(-8 105 85)">
+        {/* สมุด: เงาเหลือง + ปกดำ + หน้ากระดาษ */}
+        <rect x="58" y="34" width="96" height="112" rx="8" fill="#ffe14d" />
+        <rect x="52" y="28" width="96" height="112" rx="8" fill="#18181b" />
+        <rect x="64" y="36" width="78" height="96" rx="4" fill="#fff" />
+        {[56, 72, 88, 104, 120].map((y) => (
+          <rect key={y} x="74" y={y} width={y === 120 ? 34 : 58} height="5" rx="2.5" fill="#d9d6e3" />
+        ))}
+        {/* ห่วงสันสมุด */}
+        {[44, 64, 84, 104, 124].map((y) => (
+          <rect key={y} x="46" y={y} width="14" height="7" rx="3.5" fill="#8a4bff" stroke="#18181b" strokeWidth="2.5" />
+        ))}
+      </g>
+      {/* ดินสอ */}
+      <g transform="rotate(38 160 92)">
+        <rect x="150" y="30" width="20" height="92" rx="3" fill="#ffc95c" stroke="#18181b" strokeWidth="4" />
+        <rect x="150" y="30" width="20" height="16" rx="3" fill="#ff8fb1" stroke="#18181b" strokeWidth="4" />
+        <path d="M150 122 L160 146 L170 122 Z" fill="#fff3d6" stroke="#18181b" strokeWidth="4" strokeLinejoin="round" />
+        <path d="M156.5 138 L160 146 L163.5 138 Z" fill="#18181b" />
+      </g>
+    </svg>
+  )
+}
+
 export function EmptyState({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="flex flex-col items-center py-14 text-center">
-      <svg viewBox="0 0 220 160" className="w-56" aria-hidden>
-        <path d="M40 40 C70 10 170 5 200 20 L185 60 L200 75 C170 120 110 130 70 120 Z" fill="#8a4bff" />
-        <g transform="rotate(-12 110 90)">
-          <rect x="50" y="45" width="120" height="90" rx="6" fill="#ffe14d" />
-          <rect x="46" y="40" width="120" height="90" rx="6" fill="#18181b" />
-          <rect x="70" y="52" width="72" height="66" rx="3" fill="#fff" />
-          <path d="M98 72 L120 85 L98 98 Z" fill="#18181b" />
-          {[52, 70, 88, 106].map((y) => (
-            <g key={y}>
-              <rect x="53" y={y} width="9" height="9" rx="2" fill="#fff" />
-              <rect x="150" y={y} width="9" height="9" rx="2" fill="#8a4bff" />
-            </g>
-          ))}
-        </g>
-      </svg>
+      <NotebookArt />
       <p className="mt-6 text-xl font-semibold text-[#5b5b66]">{title}</p>
       {subtitle && <p className="mt-2 text-muted">{subtitle}</p>}
     </div>

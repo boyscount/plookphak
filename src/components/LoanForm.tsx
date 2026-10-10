@@ -69,16 +69,16 @@ export function LoanFields({ draft, onChange }: { draft: LoanDraft; onChange: (d
       <Field label="วันที่ยืม">
         <Input type="date" value={draft.borrowed_on} onChange={set('borrowed_on')} />
       </Field>
-      <Field label="วันที่เริ่มคิดดอก" hint="วันนี้นับเป็นวันที่ 1">
+      <Field label="วันที่เริ่มคิดดอกเบี้ย" hint="วันนี้นับเป็นวันที่ 1">
         <Input type="date" value={draft.interest_start_on} onChange={set('interest_start_on')} />
       </Field>
       <Field
-        label="ดอกต่อวัน (บาท)"
+        label="ดอกเบี้ยต่อวัน (บาท)"
         hint={yearly > 0 ? `≈ ${yearly.toFixed(1)}% ต่อปี${yearly > 15 ? ' · เกินเพดานกฎหมาย 15%/ปี' : ''}` : undefined}
       >
         <Input type="number" inputMode="decimal" value={draft.daily_interest} onChange={set('daily_interest')} placeholder="50" />
       </Field>
-      <Field label="วันครบชำระ (วันและเวลา)">
+      <Field label="วันครบกำหนดชำระ (วันและเวลา)">
         <Input type="datetime-local" value={draft.due_local} onChange={set('due_local')} />
       </Field>
       <Field label="ค่าปรับต่อชั่วโมง (บาท)" hint="เริ่มปรับเมื่อเลยกำหนดครบ 1 ชม.">
