@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ProfileHeader } from '../components/AppShell'
+import { GoldCard } from '../components/GoldCard'
 import { LoanCard, StateBadge } from '../components/LoanCard'
 import { PaymentList, SlipSheet } from '../components/Payments'
 import { EmptyState, NotebookArt, Pill, Row, Spinner, Tabs, Card } from '../components/ui'
@@ -44,6 +45,14 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
           )
         }
       />
+      <div className="mt-6 px-4 sm:px-6">
+        <GoldCard
+          name={profile?.aka ?? ''}
+          seed={profile?.id ?? ''}
+          tier={overdue ? 'OVERDUE' : 'GOLD MEMBER'}
+          caption={fmtBaht(totalBalance)}
+        />
+      </div>
       <div className="mt-6 grid grid-cols-2 gap-3 px-4 sm:px-6">
         <Pill icon={<SlipIcon />} onClick={() => setPayOpen(true)} tone={overdue ? 'brand' : 'gray'}>
           อัปสลิป

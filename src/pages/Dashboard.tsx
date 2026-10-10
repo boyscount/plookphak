@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ProfileHeader } from '../components/AppShell'
+import { GoldCard } from '../components/GoldCard'
 import { StateBadge } from '../components/LoanCard'
 import { PaymentList } from '../components/Payments'
 import { Avatar, Card, EmptyState, Input, Pill, Spinner, Tabs } from '../components/ui'
@@ -124,6 +125,13 @@ export function Dashboard() {
     <div>
       <ProfileHeader name={profile?.aka ?? ''} avatar={profile?.avatar} subtitle={roleLabel[profile?.role ?? 'admin']} />
       <div className="mt-6 space-y-3 px-4 sm:px-6">
+        <div className="grid items-center gap-5 lg:grid-cols-[minmax(0,340px)_1fr]">
+        <GoldCard
+          name={profile?.aka ?? ''}
+          seed={profile?.id ?? ''}
+          tier={profile?.role === 'super_admin' ? 'BLACK · SUPER ADMIN' : 'GOLD · ADMIN'}
+          caption={fmtBaht(outstanding)}
+        />
         {/* ฮีโร่: ยอดค้างรับ + อัตราเก็บเงิน */}
         <div className="rise-in relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#4b22a8] via-[#6a32e0] to-[#9a5cff] p-5 text-white shadow-[0_12px_30px_-12px_#5a2fb8]">
           <div className="pointer-events-none absolute -top-10 -right-10 size-40 rounded-full bg-white/10" />
@@ -138,6 +146,8 @@ export function Dashboard() {
             </div>
             <ProgressRing value={rate} color="#ffffff" track="rgba(255,255,255,.22)" label={`${Math.round(rate * 100)}%`} sub={<span className="text-white/75">เก็บได้</span>} />
           </div>
+        </div>
+
         </div>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
