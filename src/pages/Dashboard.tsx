@@ -70,20 +70,24 @@ function Stat({ label, value, tone, onClick }: { label: string; value: React.Rea
 
 export function BorrowerRow({ r }: { r: ReturnType<typeof useBorrowerRows>['rows'][number] }) {
   return (
-    <Link to={`/borrowers/${r.person.id}`} className="flex items-center gap-3 rounded-2xl bg-white p-3.5 active:bg-pill">
+    <Link to={`/borrowers/${r.person.id}`} className="flex min-w-0 items-center gap-3 rounded-2xl bg-white p-3.5 active:bg-pill">
       <Avatar name={r.person.aka} avatar={r.person.avatar} size="sm" />
       <span className="min-w-0 flex-1">
-        <span className="block truncate font-semibold">
-          {r.person.aka} {!r.person.active && <span className="text-xs text-muted">(ปิดใช้งาน)</span>}
+        <span className="flex items-baseline justify-between gap-2">
+          <span className="truncate font-semibold">
+            {r.person.aka} {!r.person.active && <span className="text-xs text-muted">(ปิดใช้งาน)</span>}
+          </span>
+          <span className="tabular shrink-0 font-bold">{fmtBaht(r.balance)}</span>
         </span>
         <span className="block truncate text-sm text-muted">
           @{r.person.username}
           {r.nextDue && ` · ครบ ${fmtDateTime(r.nextDue)}`}
         </span>
-      </span>
-      <span className="text-right">
-        <span className="tabular block font-bold">{fmtBaht(r.balance)}</span>
-        {r.worst && <StateBadge state={r.worst} />}
+        {r.worst && (
+          <span className="mt-1 block">
+            <StateBadge state={r.worst} />
+          </span>
+        )}
       </span>
     </Link>
   )
