@@ -1,0 +1,14 @@
+# Supabase ฟรีจะหยุด project ถ้าไม่มีการใช้งาน 7 วัน — เรียก API ทุก 3 วันกันไว้
+# ตั้ง secrets ใน GitHub: SUPABASE_URL, SUPABASE_ANON_KEY
+name: keep-supabase-awake
+on:
+  schedule:
+    - cron: '0 2 */3 * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -fsS "${{ secrets.SUPABASE_URL }}/rest/v1/app_settings?select=id" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" -o /dev/null -w "%{http_code}\n"

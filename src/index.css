@@ -1,0 +1,50 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Prompt', ui-sans-serif, system-ui, sans-serif;
+  --color-brand-50: #f4efff;
+  --color-brand-100: #e9dfff;
+  --color-brand-400: #a372ff;
+  --color-brand-500: #8a4bff;
+  --color-brand-600: #7432ea;
+  --color-brand-700: #5f24c7;
+  --color-brand-900: #2a1252;
+  --color-ink: #0e0e10;
+  --color-muted: #6b6b76;
+  --color-pill: #e7e7ec;
+  --color-canvas: #f7f7f8;
+  --color-sun: #ffc95c;
+  --color-danger: #e5383b;
+  --color-ok: #14a06b;
+  --color-warn: #f59f00;
+}
+
+html,
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100dvh;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom), 0.5rem);
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top), 0.75rem);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+}
