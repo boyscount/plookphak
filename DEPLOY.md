@@ -23,6 +23,8 @@
    ```
 5. **Project Settings → API** จด `Project URL` กับ `publishable` (หรือ `anon`) key
 
+   อยากสร้างหลายคนพร้อมกัน (admin, ผู้ยืม, รายการยืม) ใช้ `supabase/create-users.sql` แทน: แก้ชื่อ/รหัสแล้ววางใน SQL Editor
+
 > ห้ามรัน `supabase/seed.sql` บน production เพราะเป็นบัญชีทดสอบ
 
 ## 2. GitHub
