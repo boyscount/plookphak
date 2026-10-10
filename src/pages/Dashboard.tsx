@@ -5,11 +5,31 @@ import { StateBadge } from '../components/LoanCard'
 import { PaymentList } from '../components/Payments'
 import { Avatar, Card, EmptyState, Input, Pill, Spinner, Tabs } from '../components/ui'
 import { PlusIcon } from '../components/icons'
+import { CountUpBaht, DailyBars, MONEY_COLORS, ProgressRing, RankBars, StackedBar } from '../components/charts'
 import { useAuth } from '../lib/auth'
 import { fmtBaht, fmtDateTime } from '../lib/format'
 import { loanSnapshot, type LoanState } from '../lib/loanMath'
 import { useLoans, useNow, useProfiles } from '../lib/queries'
 import { roleLabel, type Loan, type Profile } from '../lib/types'
+
+/** เงินที่อนุมัติแล้วรายวัน (ตามวันที่ไทย) ย้อนหลัง n วัน */
+function inflowByDay(loans: Loan[], now: number, n: number) {
+  const DAY = 86_400_000
+  const bkkDay = (ms: number) => Math.floor((ms + 7 * 3_600_000) / DAY)
+  const today = bkkDay(now)
+  const sums = new Map<number, number>()
+  for (const p of loans.flatMap((l) => l.payments)) {
+    if (p.status !== 'approved') continue
+    const d = bkkDay(Date.parse(p.paid_at))
+    if (d > today - n) sums.set(d, (sums.get(d) ?? 0) + Number(p.amount))
+  }
+  const fmt = new Intl.DateTimeFormat('th-TH', { timeZone: 'UTC', day: 'numeric', month: 'short' })
+  return Array.from({ length: n }, (_, i) => {
+    const d = today - n + 1 + i
+    const date = new Date(d * DAY)
+    return { key: String(d), label: fmt.format(date), short: String(date.getUTCDate()), value: sums.get(d) ?? 0 }
+  })
+}
 
 const severity: Record<LoanState, number> = { overdue: 0, grace: 1, pending_review: 2, not_due: 3, paid: 4 }
 
@@ -32,12 +52,19 @@ function useBorrowerRows() {
   return { rows, loans: loans ?? [], isLoading: l1 || l2, now }
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: string }) {
-  return (
-    <Card className="!p-4">
+function Stat({ label, value, tone, onClick }: { label: string; value: React.ReactNode; tone?: string; onClick?: () => void }) {
+  const body = (
+    <>
       <p className="text-sm text-muted">{label}</p>
       <p className={`tabular mt-1 text-2xl font-bold ${tone ?? ''}`}>{value}</p>
-    </Card>
+    </>
+  )
+  return onClick ? (
+    <button type="button" onClick={onClick} className="rise-in rounded-3xl bg-white p-4 text-left active:scale-[.98]">
+      {body}
+    </button>
+  ) : (
+    <Card className="rise-in !p-4">{body}</Card>
   )
 }
 
@@ -70,8 +97,19 @@ export function Dashboard() {
 
   const snaps = loans.map((l: Loan) => loanSnapshot(l, l.payments, now))
   const outstanding = snaps.reduce((s, x) => s + x.balance, 0)
-  const lent = loans.filter((_, i) => snaps[i].balance > 0).reduce((s, l) => s + Number(l.principal), 0)
-  const penalty = snaps.filter((s) => s.balance > 0).reduce((s, x) => s + x.penalty + x.interest, 0)
+  const collected = loans.flatMap((l) => l.payments).filter((p) => p.status === 'approved').reduce((s, p) => s + Number(p.amount), 0)
+  const rate = collected + outstanding > 0 ? collected / (collected + outstanding) : 0
+  const openLoans = snaps.filter((x) => x.balance > 0).length
+  // ยอดรวมแยกประเภทของรายการที่ยังเปิดอยู่ (ก่อนหักที่จ่ายแล้ว)
+  const breakdown = loans.reduce(
+    (acc, l, i) =>
+      snaps[i].balance > 0
+        ? { principal: acc.principal + Number(l.principal), interest: acc.interest + snaps[i].interest, penalty: acc.penalty + snaps[i].penalty }
+        : acc,
+    { principal: 0, interest: 0, penalty: 0 },
+  )
+  const inflow = inflowByDay(loans, now, 14)
+  const top = rows.filter((r) => r.balance > 0).sort((a, b) => b.balance - a.balance).slice(0, 5)
   const overdue = snaps.filter((s) => s.state === 'overdue').length
   const pending = loans.flatMap((l) =>
     l.payments.filter((p) => p.status === 'pending').map((p) => ({ ...p, aka: l.borrower.aka })),
@@ -81,13 +119,70 @@ export function Dashboard() {
   return (
     <div>
       <ProfileHeader name={profile?.aka ?? ''} avatar={profile?.avatar} subtitle={roleLabel[profile?.role ?? 'admin']} />
-      <div className="mt-6 grid grid-cols-2 gap-3 px-4 sm:px-6 lg:grid-cols-4">
-        <Stat label="ยอดค้างรับทั้งหมด" value={fmtBaht(outstanding)} />
-        <Stat label="เงินต้นที่ยังไม่คืน" value={fmtBaht(lent)} />
-        <Stat label="ดอก + ค่าปรับสะสม" value={fmtBaht(penalty)} />
-        <Stat label="เลยกำหนด / สลิปรอตรวจ" value={`${overdue} / ${pending.length}`} tone={overdue ? 'text-danger' : ''} />
-      </div>
-      <div className="mt-3 px-4 sm:px-6">
+      <div className="mt-6 space-y-3 px-4 sm:px-6">
+        {/* ฮีโร่: ยอดค้างรับ + อัตราเก็บเงิน */}
+        <div className="rise-in relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#4b22a8] via-[#6a32e0] to-[#9a5cff] p-5 text-white shadow-[0_12px_30px_-12px_#5a2fb8]">
+          <div className="pointer-events-none absolute -top-10 -right-10 size-40 rounded-full bg-white/10" />
+          <div className="pointer-events-none absolute -bottom-16 left-10 size-40 rounded-full bg-white/5" />
+          <div className="relative flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-sm text-white/80">ยอดค้างรับทั้งหมด</p>
+              <CountUpBaht value={outstanding} className="block text-4xl font-bold sm:text-5xl" />
+              <p className="mt-2 text-sm text-white/80">
+                เก็บแล้ว <b className="tabular text-white">{fmtBaht(collected)}</b> · {openLoans} รายการเปิดอยู่
+              </p>
+            </div>
+            <ProgressRing value={rate} color="#ffffff" track="rgba(255,255,255,.22)" label={`${Math.round(rate * 100)}%`} sub={<span className="text-white/75">เก็บได้</span>} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <Stat label="เงินต้นที่ปล่อยอยู่" value={<CountUpBaht value={breakdown.principal} />} />
+          <Stat label="ดอก + ค่าปรับสะสม" value={<CountUpBaht value={breakdown.interest + breakdown.penalty} />} />
+          <Stat label="เลยกำหนด" value={`${overdue} คน`} tone={overdue ? 'text-danger' : ''} onClick={() => setTab('attention')} />
+          <Stat label="สลิปรอตรวจ" value={`${pending.length} ใบ`} tone={pending.length ? 'text-brand-700' : ''} onClick={() => setTab('slips')} />
+        </div>
+
+        <div className="grid gap-3 lg:grid-cols-2">
+          <Card className="rise-in">
+            <div className="mb-4 flex items-baseline justify-between">
+              <h3 className="font-bold">เงินเข้า 14 วันล่าสุด</h3>
+              <span className="tabular text-sm text-muted">รวม {fmtBaht(inflow.reduce((s, d) => s + d.value, 0))}</span>
+            </div>
+            <DailyBars data={inflow} />
+          </Card>
+          <Card className="rise-in">
+            <h3 className="font-bold">ยอดรวมแยกประเภท</h3>
+            <p className="mb-4 text-sm text-muted">ของรายการที่ยังเปิดอยู่ ก่อนหักที่จ่ายแล้ว</p>
+            <StackedBar
+              segments={[
+                { key: 'p', label: 'เงินต้น', value: breakdown.principal, color: MONEY_COLORS.principal },
+                { key: 'i', label: 'ดอกเบี้ย', value: breakdown.interest, color: MONEY_COLORS.interest },
+                { key: 'f', label: 'ค่าปรับ', value: breakdown.penalty, color: MONEY_COLORS.penalty },
+              ]}
+            />
+          </Card>
+        </div>
+
+        {top.length > 0 && (
+          <Card className="rise-in">
+            <h3 className="mb-3 font-bold">ค้างมากที่สุด</h3>
+            <RankBars
+              rows={top.map((r) => ({
+                key: r.person.id,
+                value: r.balance,
+                label: (
+                  <span className="flex items-center gap-2">
+                    <Avatar name={r.person.aka} avatar={r.person.avatar} size="xs" />
+                    {r.person.aka}
+                  </span>
+                ),
+              }))}
+              onPick={(id) => navigate(`/borrowers/${id}`)}
+            />
+          </Card>
+        )}
+
         <Pill icon={<PlusIcon className="size-6" />} className="w-full" onClick={() => navigate('/borrowers/new')}>
           เพิ่มผู้ยืม
         </Pill>

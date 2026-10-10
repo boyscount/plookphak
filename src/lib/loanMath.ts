@@ -187,3 +187,34 @@ export function loanSnapshot(loan: LoanTerms, payments: PaymentLike[], nowMs: nu
     msToNextPenalty: lateSince !== null ? HOUR - ((nowMs - lateSince) % HOUR) : null,
   }
 }
+
+export type DayStatus = 'on_time' | 'late' | 'missed' | 'today' | 'none'
+
+/** แบบรายวัน: สถานะการจ่ายดอกของแต่ละวัน ย้อนหลัง n วัน (รวมวันนี้) */
+export function dailyHistory(loan: LoanTerms, payments: PaymentLike[], nowMs: number, n = 14) {
+  const pays = validPayments(payments)
+  const paidBy = (t: number) => pays.filter((p) => p.at <= t).reduce((s, p) => s + p.amount, 0)
+  const paidNow = paidBy(nowMs)
+  const startDay = dateDayNumber(loan.interest_start_on)
+  const today = bkkDayNumber(nowMs)
+  const dueMs = Date.parse(loan.due_at)
+  const out: { day: number; date: string; status: DayStatus }[] = []
+  for (let d = today - n + 1; d <= today; d++) {
+    const date = new Date(d * DAY).toISOString().slice(0, 10)
+    const i = d - startDay
+    if (i < 0) {
+      out.push({ day: d, date, status: 'none' })
+      continue
+    }
+    const cutoff = cutoffAt(loan, i)
+    // ยอดที่ต้องจ่ายครบภายในตัดรอบวันนั้น (ดอกทุกวันถึงวันนั้น + เงินต้นถ้าครบกำหนดแล้ว)
+    const base = Number(loan.daily_interest) * (i + 1) + (dueMs <= cutoff ? Number(loan.principal) : 0)
+    let status: DayStatus
+    if (paidBy(cutoff) >= base - 1e-9) status = 'on_time'
+    else if (cutoff > nowMs) status = 'today'
+    else if (paidNow >= base - 1e-9) status = 'late'
+    else status = 'missed'
+    out.push({ day: d, date, status })
+  }
+  return out
+}

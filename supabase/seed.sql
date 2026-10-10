@@ -15,3 +15,14 @@ from public.profiles where username = 'nid';
 insert into public.payments (loan_id, amount, method, paid_at, status)
 select l.id, 30, 'cash', ((current_date - 1)::timestamp + time '12:00') at time zone 'Asia/Bangkok', 'approved'
 from public.loans l join public.profiles p on p.id = l.borrower_id where p.username = 'nid';
+
+-- ประวัติจ่ายบางส่วนของชายหนุ่ม ให้กราฟเงินเข้ามีข้อมูล
+insert into public.payments (loan_id, amount, method, paid_at, status)
+select l.id, v.amount, 'cash', now() - v.ago, 'approved'
+from public.loans l join public.profiles p on p.id = l.borrower_id,
+  (values (300, interval '8 days'), (450, interval '5 days'), (200, interval '2 days')) as v(amount, ago)
+where p.username = 'somchai';
+-- หนิดจ่ายดอกรายวันช้าไปหนึ่งวัน
+insert into public.payments (loan_id, amount, method, paid_at, status)
+select l.id, 30, 'cash', ((current_date)::timestamp + time '09:00') at time zone 'Asia/Bangkok', 'approved'
+from public.loans l join public.profiles p on p.id = l.borrower_id where p.username = 'nid';

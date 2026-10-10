@@ -1,5 +1,6 @@
 import { fmtBaht, fmtDate, fmtDateTime, fmtDuration } from '../lib/format'
-import { loanSnapshot, type LoanState } from '../lib/loanMath'
+import { dailyHistory, loanSnapshot, type LoanState } from '../lib/loanMath'
+import { Confetti, CountUpBaht, DayStrip, MONEY_COLORS, ProgressRing, StackedBar } from './charts'
 import { useNow } from '../lib/queries'
 import type { Loan } from '../lib/types'
 import { Card, cx, Row } from './ui'
@@ -83,18 +84,41 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
   const now = useNow(live ? 1000 : 30_000)
   const s = loanSnapshot(loan, loan.payments, now)
   return (
-    <Card className="space-y-4">
+    <Card className="rise-in space-y-4">
       <div className="flex items-center justify-between gap-2">
         <div>
           <p className="text-sm text-muted">ยอดคงเหลือที่ต้องชำระ</p>
-          <p className={cx('tabular text-3xl font-bold', s.balance > 0 && s.state === 'overdue' && 'text-danger')}>
-            {fmtBaht(s.balance)}
-          </p>
+          <CountUpBaht value={s.balance} className={cx('block text-3xl font-bold', s.balance > 0 && s.state === 'overdue' && 'text-danger')} />
         </div>
         <StateBadge state={s.state} />
       </div>
 
       {live && <Countdown loan={loan} now={now} />}
+
+      <div className="rounded-3xl bg-canvas p-4">
+        <div className="flex items-center gap-4">
+          <ProgressRing value={s.total > 0 ? (s.total - s.balance) / s.total : 0} size={76} stroke={8} />
+          <div className="min-w-0">
+            <p className="text-sm text-muted">จ่ายแล้ว</p>
+            <p className="tabular text-lg font-bold">
+              {fmtBaht(s.total - s.balance)} <span className="text-sm font-medium text-muted">จาก {fmtBaht(s.total)}</span>
+            </p>
+          </div>
+        </div>
+        <div className="mt-4">
+          <StackedBar
+            height={10}
+            segments={[
+              { key: 'p', label: 'เงินต้น', value: Number(loan.principal), color: MONEY_COLORS.principal },
+              { key: 'i', label: 'ดอกเบี้ย', value: s.interest, color: MONEY_COLORS.interest },
+              { key: 'f', label: 'ค่าปรับ', value: s.penalty, color: MONEY_COLORS.penalty },
+            ]}
+          />
+        </div>
+      </div>
+
+      {s.daily && live && <DayStrip days={dailyHistory(loan, loan.payments, now, 14).filter((d) => d.status !== 'none')} />}
+      {live && s.state === 'paid' && <Confetti id={loan.id} />}
 
       <div className="divide-y divide-[#0000000d] text-[15px]">
         <Row label="รูปแบบการจ่ายดอกเบี้ย" value={s.daily ? `รายวัน ก่อน ${(loan.daily_cutoff ?? '17:00').slice(0, 5)} น.` : 'พร้อมเงินต้น'} />

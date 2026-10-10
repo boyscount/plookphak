@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { loanSnapshot, owedAt, settledAt, type LoanTerms } from './loanMath'
+import { dailyHistory, loanSnapshot, owedAt, settledAt, type LoanTerms } from './loanMath'
 
 // ยืม 1,000 ดอก 50/วัน เริ่มคิดดอก 1 ต.ค. ครบชำระ 5 ต.ค. 18:00 (ไทย) ปรับ 20/ชม.
 const loan: LoanTerms = {
@@ -138,5 +138,13 @@ describe('แบบจ่ายดอกรายวัน', () => {
   it('ปิดยอดก่อนกำหนด ดอกหยุดที่วันที่จ่าย', () => {
     const pays = [pay(50, '2026-10-01T12:00:00+07:00'), pay(1050, '2026-10-02T09:00:00+07:00')]
     expect(loanSnapshot(daily, pays, t('2026-10-09T00:00:00+07:00'))).toMatchObject({ state: 'paid', interest: 100, balance: 0 })
+  })
+})
+
+describe('ข้อมูลกราฟ', () => {
+  it('ประวัติดอกรายวัน: ทัน / ช้า / ไม่จ่าย / วันนี้', () => {
+    const pays = [pay(50, '2026-10-01T12:00:00+07:00'), pay(50, '2026-10-02T20:00:00+07:00')]
+    const h = dailyHistory(daily, pays, t('2026-10-04T10:00:00+07:00'), 5)
+    expect(h.map((x) => x.status)).toEqual(['none', 'on_time', 'late', 'missed', 'today'])
   })
 })
