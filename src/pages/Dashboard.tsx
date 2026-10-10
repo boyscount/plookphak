@@ -198,9 +198,12 @@ export function Dashboard() {
           </Card>
         )}
 
-        <Pill icon={<PlusIcon className="size-6" />} className="w-full" onClick={() => navigate('/borrowers/new')}>
-          เพิ่มผู้ยืม
-        </Pill>
+        <div className="grid grid-cols-2 gap-3">
+          <Pill onClick={() => navigate('/building')}>🏢 ตึกแมว</Pill>
+          <Pill icon={<PlusIcon className="size-6" />} onClick={() => navigate('/borrowers/new')}>
+            เพิ่มผู้ยืม
+          </Pill>
+        </div>
       </div>
 
       <div className="mt-6 px-4 sm:px-6">

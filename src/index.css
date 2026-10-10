@@ -513,3 +513,49 @@ body {
     transform: translateY(-60px) scale(1.2);
   }
 }
+
+/* ตึกแมว: ป้ายชื่อหน้าห้อง และป้ายบนดาดฟ้า */
+.floor-plate {
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.92);
+  color: #1f1530;
+  font: 500 11px/1.3 'Prompt', sans-serif;
+  box-shadow: 0 4px 12px -4px rgb(0 0 0 / 0.4);
+  cursor: pointer;
+}
+.floor-plate.is-late {
+  background: #ff4d5e;
+  color: #fff;
+  animation: plate-pulse 1.4s ease-in-out infinite;
+}
+.floor-plate.is-selected {
+  outline: 3px solid #ffd36e;
+}
+@keyframes plate-pulse {
+  50% {
+    box-shadow: 0 0 0 6px rgb(255 77 94 / 0.25);
+  }
+}
+.roof-sign {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #8c6516, #f6dc8a 45%, #c99a35);
+  color: #3d2c08;
+  font: 500 11px/1.25 'Prompt', sans-serif;
+  white-space: nowrap;
+  box-shadow: 0 0 24px rgb(255 207 77 / 0.5);
+}
+.roof-sign b {
+  font-size: 18px;
+  font-weight: 700;
+}
+@media (prefers-reduced-motion: reduce) {
+  .floor-plate.is-late {
+    animation: none;
+  }
+}

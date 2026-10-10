@@ -16,6 +16,7 @@ import { NewBorrower } from './pages/NewBorrower'
 
 // บ้านแมวมี three.js (~ครึ่ง MB) — โหลดเมื่อเปิดหน้านี้เท่านั้น
 const CatHome = lazy(() => import('./pages/CatHome'))
+const CatBuilding = lazy(() => import('./pages/CatBuilding'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 10_000, refetchOnWindowFocus: true, retry: 1 } },
@@ -56,6 +57,16 @@ function Routed() {
         />
         {isStaff && <Route path="borrowers/new" element={<NewBorrower />} />}
         {isStaff && <Route path="borrowers/:id" element={<BorrowerDetail />} />}
+        {isStaff && (
+          <Route
+            path="building"
+            element={
+              <Suspense fallback={<Spinner />}>
+                <CatBuilding />
+              </Suspense>
+            }
+          />
+        )}
         {isStaff && (
           <Route
             path="borrowers/:id/cat"
