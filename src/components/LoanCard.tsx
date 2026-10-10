@@ -29,16 +29,34 @@ function Countdown({ loan, now }: { loan: Loan; now: number }) {
       </div>
     )
   }
-  const overdue = s.msToDue <= 0
-  const d = fmtDuration(Math.abs(s.msToDue))
+  // แบบรายวัน: นับถึงตัดรอบถัดไป หรือนับเวลาที่ค้าง; แบบพร้อมต้น: นับถึง/หลังวันครบชำระ
+  let late: boolean
+  let ms: number
+  let title: string
+  let sub: string | null = null
+  if (s.daily) {
+    late = s.lateSince !== null
+    ms = late ? now - s.lateSince! : s.nextDue ? s.nextDue.at - now : 0
+    title = late ? 'ค้างชำระมาแล้ว' : 'เหลือเวลาก่อนตัดรอบ'
+    sub = late
+      ? `ค้าง ${fmtBaht(s.arrearsAmount)} — อัปสลิปเพื่อหยุดค่าปรับ`
+      : s.nextDue
+        ? `ต้องจ่าย ${fmtBaht(s.nextDue.amount)} ภายใน ${fmtDateTime(s.nextDue.at)}`
+        : null
+  } else {
+    late = s.msToDue <= 0
+    ms = Math.abs(s.msToDue)
+    title = late ? 'เลยกำหนดชำระมาแล้ว' : 'เหลือเวลาก่อนครบชำระ'
+  }
+  const d = fmtDuration(ms)
   return (
     <div
       className={cx(
         'rounded-3xl p-5 text-center text-white',
-        overdue ? 'bg-gradient-to-br from-[#d92d4b] to-[#ff5a5f]' : 'bg-gradient-to-br from-[#5a2fb8] to-[#8b4cff]',
+        late ? 'bg-gradient-to-br from-[#d92d4b] to-[#ff5a5f]' : 'bg-gradient-to-br from-[#5a2fb8] to-[#8b4cff]',
       )}
     >
-      <p className="text-sm opacity-90">{overdue ? 'เลยกำหนดชำระมาแล้ว' : 'เหลือเวลาก่อนครบชำระ'}</p>
+      <p className="text-sm opacity-90">{title}</p>
       <div className="tabular mt-2 flex items-end justify-center gap-2 font-bold">
         {d.d > 0 && (
           <span className="text-4xl sm:text-5xl">
@@ -50,6 +68,7 @@ function Countdown({ loan, now }: { loan: Loan; now: number }) {
           {String(d.h).padStart(2, '0')}:{String(d.m).padStart(2, '0')}:{String(d.s).padStart(2, '0')}
         </span>
       </div>
+      {sub && <p className="mt-2 text-sm font-medium">{sub}</p>}
       {s.msToNextPenalty !== null && Number(loan.hourly_penalty) > 0 && (
         <p className="mt-3 rounded-full bg-black/15 px-4 py-1.5 text-sm">
           {s.state === 'grace' ? 'เริ่มปรับ' : 'ปรับเพิ่มอีก'} {fmtBaht(Number(loan.hourly_penalty))} ใน{' '}
@@ -78,6 +97,7 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
       {live && <Countdown loan={loan} now={now} />}
 
       <div className="divide-y divide-[#0000000d] text-[15px]">
+        <Row label="รูปแบบการจ่ายดอกเบี้ย" value={s.daily ? `รายวัน ก่อน ${loan.daily_cutoff.slice(0, 5)} น.` : 'พร้อมเงินต้น'} />
         <Row label="จำนวนเงินที่ยืม" value={fmtBaht(Number(loan.principal))} />
         <Row label="วันที่ยืม" value={fmtDate(loan.borrowed_on)} />
         <Row label="วันที่เริ่มคิดดอกเบี้ย" value={fmtDate(loan.interest_start_on)} />

@@ -9,6 +9,7 @@
     "lint": "oxlint",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:parity": "cross-env PARITY=1 vitest run parity",
     "test:rls": "node --experimental-websocket scripts/rls-check.mjs"
   },
   "dependencies": {
@@ -24,6 +25,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "cross-env": "^10.1.0",
     "oxlint": "^1.81.0",
     "supabase": "^2.120.0",
     "tailwindcss": "^4.3.3",

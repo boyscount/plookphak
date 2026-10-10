@@ -33,6 +33,8 @@ export type Loan = {
   daily_interest: number
   due_at: string
   hourly_penalty: number
+  interest_mode: 'with_principal' | 'daily'
+  daily_cutoff: string
   note: string | null
   created_at: string
   borrower: Profile

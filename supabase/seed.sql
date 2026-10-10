@@ -8,6 +8,10 @@ select public.internal_create_user('nid', 'test1234', 'หนิด', 'borrower'
 insert into public.loans (borrower_id, principal, borrowed_on, interest_start_on, daily_interest, due_at, hourly_penalty, note)
 select id, 5000, current_date - 10, current_date - 9, 50, now() - interval '5 hours 20 minutes', 20, 'ค่าซ่อมรถ'
 from public.profiles where username = 'somchai';
-insert into public.loans (borrower_id, principal, borrowed_on, interest_start_on, daily_interest, due_at, hourly_penalty)
-select id, 1500, current_date - 2, current_date - 1, 30, now() + interval '2 days 3 hours', 10
+-- จ่ายดอกรายวัน ตัดรอบ 17:00: จ่ายดอกวันแรกแล้ว วันนี้ยังไม่จ่าย
+insert into public.loans (borrower_id, principal, borrowed_on, interest_start_on, daily_interest, due_at, hourly_penalty, interest_mode, daily_cutoff)
+select id, 1500, current_date - 2, current_date - 1, 30, now() + interval '5 days', 20, 'daily', '17:00'
 from public.profiles where username = 'nid';
+insert into public.payments (loan_id, amount, method, paid_at, status)
+select l.id, 30, 'cash', ((current_date - 1)::timestamp + time '12:00') at time zone 'Asia/Bangkok', 'approved'
+from public.loans l join public.profiles p on p.id = l.borrower_id where p.username = 'nid';

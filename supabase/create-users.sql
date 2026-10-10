@@ -19,7 +19,7 @@ select public.internal_create_user('admin1', 'เปลี่ยนรหัส�
 with b as (
   select public.internal_create_user('somchai', 'เปลี่ยนรหัสนี้', 'ชายหนุ่ม', 'borrower', null) as id
 )
-insert into public.loans (borrower_id, principal, borrowed_on, interest_start_on, daily_interest, due_at, hourly_penalty, note)
+insert into public.loans (borrower_id, principal, borrowed_on, interest_start_on, daily_interest, due_at, hourly_penalty, interest_mode, daily_cutoff, note)
 select id,
   5000,                          -- จำนวนเงินที่ยืม
   '2026-10-01',                  -- วันที่ยืม
@@ -27,6 +27,8 @@ select id,
   50,                            -- ดอกต่อวัน
   '2026-10-31 18:00+07',         -- วันครบชำระ (เวลาไทย)
   20,                            -- ค่าปรับต่อชั่วโมง
+  'with_principal',              -- แบบจ่ายดอก: 'with_principal' = จ่ายดอกพร้อมเงินต้น, 'daily' = จ่ายดอกรายวัน
+  '17:00',                       -- เวลาตัดรอบดอกรายวัน (ใช้เฉพาะแบบ daily)
   'ค่าซ่อมรถ'                     -- หมายเหตุ (ใส่ null ถ้าไม่มี)
 from b;
 

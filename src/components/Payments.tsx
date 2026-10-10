@@ -144,7 +144,10 @@ export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boole
   const [done, setDone] = useState(false)
 
   const selected = unpaid.find((l) => l.id === loanId) ?? unpaid[0]
-  const balance = selected ? loanSnapshot(selected, selected.payments, Date.now()).balance : 0
+  const snap = selected ? loanSnapshot(selected, selected.payments, Date.now()) : null
+  const balance = snap?.balance ?? 0
+  // แบบรายวัน: ยอดที่ต้องจ่ายตอนนี้ = ที่ค้างอยู่ หรือดอกรอบถัดไป
+  const roundAmount = snap?.daily ? (snap.arrearsAmount > 0 ? snap.arrearsAmount : (snap.nextDue?.amount ?? 0)) : 0
   const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
 
   async function send() {
@@ -214,9 +217,15 @@ export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boole
               </span>
             )}
           </label>
-          <Field label="ยอดที่โอน (บาท)" hint={`ยอดคงเหลือตอนนี้ ${fmtBaht(balance)}`}>
+          <Field label="ยอดที่โอน (บาท)" hint={`ยอดคงเหลือทั้งหมด ${fmtBaht(balance)}`}>
             <div className="flex gap-2">
               <Input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
+              {roundAmount > 0 && (
+                <button type="button" className="shrink-0 rounded-2xl bg-brand-50 px-3 text-sm font-semibold text-brand-700" onClick={() => setAmount(String(roundAmount))}>
+                  {snap!.arrearsAmount > 0 ? 'ยอดค้าง' : 'ดอกรอบนี้'}
+                  <span className="block text-xs">{fmtBaht(roundAmount)}</span>
+                </button>
+              )}
               <button type="button" className="shrink-0 rounded-2xl bg-pill px-4 text-sm font-semibold" onClick={() => setAmount(String(balance))}>
                 เต็มยอด
               </button>
