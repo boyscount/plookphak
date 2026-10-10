@@ -6,31 +6,12 @@ import { StateBadge } from '../components/LoanCard'
 import { PaymentList } from '../components/Payments'
 import { Avatar, Card, EmptyState, Input, Pill, Spinner, Tabs } from '../components/ui'
 import { PlusIcon } from '../components/icons'
-import { CountUpBaht, DailyBars, MONEY_COLORS, ProgressRing, RankBars, StackedBar } from '../components/charts'
+import { CountUpBaht, MONEY_COLORS, ProgressRing, RankBars, StackedBar } from '../components/charts'
 import { useAuth } from '../lib/auth'
 import { fmtBaht, fmtDateTime } from '../lib/format'
 import { loanSnapshot, type LoanState } from '../lib/loanMath'
 import { useLoans, useNow, useProfiles } from '../lib/queries'
 import { roleLabel, type Loan, type Profile } from '../lib/types'
-
-/** เงินที่อนุมัติแล้วรายวัน (ตามวันที่ไทย) ย้อนหลัง n วัน */
-function inflowByDay(loans: Loan[], now: number, n: number) {
-  const DAY = 86_400_000
-  const bkkDay = (ms: number) => Math.floor((ms + 7 * 3_600_000) / DAY)
-  const today = bkkDay(now)
-  const sums = new Map<number, number>()
-  for (const p of loans.flatMap((l) => l.payments)) {
-    if (p.status !== 'approved') continue
-    const d = bkkDay(Date.parse(p.paid_at))
-    if (d > today - n) sums.set(d, (sums.get(d) ?? 0) + Number(p.amount))
-  }
-  const fmt = new Intl.DateTimeFormat('th-TH', { timeZone: 'UTC', day: 'numeric', month: 'short' })
-  return Array.from({ length: n }, (_, i) => {
-    const d = today - n + 1 + i
-    const date = new Date(d * DAY)
-    return { key: String(d), label: fmt.format(date), short: String(date.getUTCDate()), value: sums.get(d) ?? 0 }
-  })
-}
 
 const severity: Record<LoanState, number> = { overdue: 0, grace: 1, pending_review: 2, not_due: 3, paid: 4 }
 
@@ -113,7 +94,6 @@ export function Dashboard() {
         : acc,
     { principal: 0, interest: 0, penalty: 0 },
   )
-  const inflow = inflowByDay(loans, now, 14)
   const top = rows.filter((r) => r.balance > 0).sort((a, b) => b.balance - a.balance).slice(0, 5)
   const overdue = snaps.filter((s) => s.state === 'overdue').length
   const pending = loans.flatMap((l) =>
@@ -158,14 +138,7 @@ export function Dashboard() {
           <Stat label="สลิปรอตรวจ" value={`${pending.length} ใบ`} tone={pending.length ? 'text-brand-700' : ''} onClick={() => setTab('slips')} />
         </div>
 
-        <div className="grid gap-3 lg:grid-cols-2">
-          <Card className="rise-in">
-            <div className="mb-4 flex items-baseline justify-between">
-              <h3 className="font-bold">เงินเข้า 14 วันล่าสุด</h3>
-              <span className="tabular text-sm text-muted">รวม {fmtBaht(inflow.reduce((s, d) => s + d.value, 0))}</span>
-            </div>
-            <DailyBars data={inflow} />
-          </Card>
+        <div className="grid gap-3">
           <Card className="rise-in">
             <h3 className="font-bold">ยอดรวมแยกประเภท</h3>
             <p className="mb-4 text-sm text-muted">ของรายการที่ยังเปิดอยู่ ก่อนหักที่จ่ายแล้ว</p>

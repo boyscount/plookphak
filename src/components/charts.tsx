@@ -140,64 +140,6 @@ export function StackedBar({ segments, height = 14 }: { segments: Segment[]; hei
   )
 }
 
-/** แท่งรายวันแนวตั้ง มี tooltip ตอนชี้/แตะ */
-export function DailyBars({
-  data,
-  color = 'var(--money-principal)',
-  height = 140,
-}: {
-  data: { key: string; label: string; short: string; value: number }[]
-  color?: string
-  height?: number
-}) {
-  const [active, setActive] = useState<number | null>(null)
-  const max = Math.max(1, ...data.map((d) => d.value))
-  const W = 100 / data.length
-  const a = active !== null ? data[active] : null
-  return (
-    <div className="relative select-none" onMouseLeave={() => setActive(null)}>
-      {a && (
-        <div
-          className="pointer-events-none absolute -top-2 z-10 -translate-x-1/2 -translate-y-full rounded-xl bg-black/85 px-3 py-1.5 text-xs whitespace-nowrap text-white shadow-lg"
-          style={{ left: `${(active! + 0.5) * W}%` }}
-        >
-          <div className="text-white/70">{a.label}</div>
-          <div className="tabular font-semibold">{fmtBaht(a.value)}</div>
-        </div>
-      )}
-      <div className="flex items-end gap-[2px] border-b border-line" style={{ height }}>
-        {data.map((d, i) => (
-          <button
-            key={d.key}
-            type="button"
-            aria-label={`${d.label} ${fmtBaht(d.value)}`}
-            onMouseEnter={() => setActive(i)}
-            onFocus={() => setActive(i)}
-            onClick={() => setActive(i)}
-            className="group flex h-full flex-1 items-end"
-          >
-            <span
-              className="block w-full rounded-t-[4px] transition-[height,opacity] duration-700"
-              style={{
-                height: d.value > 0 ? `max(${(d.value / max) * 100}%, 3px)` : 0,
-                background: color,
-                opacity: active === null || active === i ? 1 : 0.35,
-              }}
-            />
-          </button>
-        ))}
-      </div>
-      <div className="mt-1.5 flex text-[11px] text-muted">
-        {data.map((d, i) => (
-          <span key={d.key} className="flex-1 text-center">
-            {i % Math.ceil(data.length / 7) === 0 || i === data.length - 1 ? d.short : ''}
-          </span>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 /** อันดับแนวนอน สีเดียว (ขนาด) */
 export function RankBars({
   rows,
