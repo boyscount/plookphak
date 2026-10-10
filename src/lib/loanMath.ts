@@ -236,9 +236,8 @@ export type PlanDay = {
 export function dailyPlan(loan: LoanTerms, payments: PaymentLike[], nowMs: number, aheadDays = 7) {
   const startDay = dateDayNumber(loan.interest_start_on)
   const today = bkkDayNumber(nowMs)
-  const paid = validPayments(payments)
-    .filter((p) => p.at <= nowMs)
-    .reduce((s, p) => s + p.amount, 0)
+  // นับทุกการจ่ายที่ไม่ถูกปฏิเสธ (รวมที่เพิ่งบันทึกหลังเปิดหน้า — เวลาเซิร์ฟเวอร์อาจเดินหน้ากว่าเครื่อง)
+  const paid = validPayments(payments).reduce((s, p) => s + p.amount, 0)
   const dueMs = Date.parse(loan.due_at)
   const principal = Number(loan.principal)
   const rate = Number(loan.daily_interest)

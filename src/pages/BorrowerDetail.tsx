@@ -5,13 +5,14 @@ import { BackIcon, CashIcon, KeyIcon, PlusIcon } from '../components/icons'
 import { LoanCard } from '../components/LoanCard'
 import { draftFromLoan, emptyLoanDraft, LoanFields, parseLoanDraft, type LoanDraft } from '../components/LoanForm'
 import { CashSheet, PaymentList } from '../components/Payments'
-import { EmptyState, ErrorText, Field, Input, Pill, Row, Sheet, Spinner, Tabs, Card } from '../components/ui'
-import { fmtDateTime } from '../lib/format'
+import { Card, cx, EmptyState, ErrorText, Field, Input, Pill, Row, Sheet, Spinner, Tabs } from '../components/ui'
+import { fmtBaht, fmtDateTime } from '../lib/format'
 import { loanSnapshot } from '../lib/loanMath'
 import { must, useLoans, useProfile, useRefreshMoney } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import type { Loan } from '../lib/types'
 import { useQueryClient } from '@tanstack/react-query'
+import { DayPicker } from '../components/DayPicker'
 import { BadgeRow, TierChip } from '../components/Badges'
 import { memberStats, tierOf } from '../lib/tier'
 
@@ -136,7 +137,11 @@ export function BorrowerDetail() {
       </div>
 
       {editLoan && (
-        <LoanSheet borrowerId={person.id} loan={editLoan === 'new' ? null : editLoan} onClose={() => setEditLoan(null)} />
+        <LoanSheet
+          borrowerId={person.id}
+          loan={editLoan === 'new' ? null : (all.find((l) => l.id === editLoan.id) ?? editLoan)}
+          onClose={() => setEditLoan(null)}
+        />
       )}
       {cashFor && <CashSheet loan={cashFor} open onClose={() => setCashFor(null)} />}
       {editProfile && <ProfileSheet id={person.id} aka={person.aka} note={person.note} onClose={() => setEditProfile(false)} />}
@@ -195,8 +200,101 @@ function LoanSheet({ borrowerId, loan, onClose }: { borrowerId: string; loan: Lo
         <Pill tone="brand" className="w-full" disabled={busy} onClick={save}>
           บันทึก
         </Pill>
+        {loan && draft.interest_mode === 'daily' && (
+          <div className="border-t border-line pt-4">
+            {loan.interest_mode === 'daily' ? (
+              <MarkDaysPaid loan={loan} />
+            ) : (
+              <p className="rounded-2xl bg-brand-50 px-4 py-3 text-sm text-brand-700">
+                กดบันทึกเปลี่ยนเป็นแบบจ่ายดอกรายวันก่อน แล้วจะเลือกวันที่จ่ายแล้วได้ตรงนี้
+              </p>
+            )}
+          </div>
+        )}
       </div>
     </Sheet>
+  )
+}
+
+/** admin: ติ๊กวันที่จ่ายดอกแล้ว (จ่ายเงินสด/โอนนอกแอป) จากหน้าแก้ไขรายการยืม */
+function MarkDaysPaid({ loan }: { loan: Loan }) {
+  const refresh = useRefreshMoney()
+  const [atMs] = useState(() => Date.now())
+  const [through, setThrough] = useState<number | null>(null)
+  const [amount, setAmount] = useState(0)
+  const [note, setNote] = useState('')
+  const [how, setHow] = useState<'cash' | 'transfer'>('cash')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    if (!amount) return setError('เลือกวันที่จ่ายก่อน')
+    setBusy(true)
+    setError(null)
+    setMsg(null)
+    try {
+      // ไม่มีสลิป จึงบันทึกเป็นรับเงินโดย admin (ถือว่าตรวจแล้ว)
+      await must(
+        supabase.from('payments').insert({
+          loan_id: loan.id,
+          amount,
+          method: 'cash',
+          note: `${note}${how === 'transfer' ? ' · โอนนอกแอป' : ' · เงินสด'}`,
+        }),
+      )
+      refresh()
+      setMsg(`บันทึก${note}แล้ว`)
+      setThrough(null)
+      setAmount(0)
+      setNote('')
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="space-y-3">
+      <h3 className="font-bold">📅 ดอกรายวัน: บันทึกวันที่จ่ายแล้ว</h3>
+      <DayPicker
+        key={loan.payments.length}
+        loan={loan}
+        payments={loan.payments}
+        atMs={atMs}
+        through={through}
+        onChange={(k, amt, label) => {
+          setThrough(k)
+          setAmount(amt)
+          setNote(label)
+        }}
+      />
+      <div className="grid grid-cols-2 gap-1 rounded-full bg-pill p-1" role="radiogroup" aria-label="จ่ายด้วย">
+        {(
+          [
+            ['cash', '💵 เงินสด'],
+            ['transfer', '📲 โอนนอกแอป'],
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            role="radio"
+            aria-checked={how === k}
+            onClick={() => setHow(k)}
+            className={cx('rounded-full py-2 text-sm font-semibold', how === k ? 'bg-surface text-brand-700 shadow' : 'text-muted')}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+      <ErrorText error={error} />
+      {msg && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-ok">✓ {msg}</p>}
+      <Pill tone="ok" className="w-full" disabled={busy || !amount} onClick={save}>
+        {amount ? `บันทึกว่าจ่ายแล้ว ${fmtBaht(amount)}` : 'เลือกวันที่จ่ายแล้ว'}
+      </Pill>
+    </div>
   )
 }
 
