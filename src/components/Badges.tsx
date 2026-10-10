@@ -34,10 +34,10 @@ export function BadgeRow({ stats }: { stats: MemberStats }) {
             title={b.hint}
             className={cx(
               'flex w-[92px] shrink-0 flex-col items-center rounded-2xl p-2.5 text-center',
-              b.earned ? 'bg-white shadow-[0_6px_16px_-10px_#7432ea]' : 'bg-pill',
+              b.earned ? 'bg-surface shadow-[0_6px_16px_-10px_#7432ea]' : 'bg-pill',
             )}
           >
-            <span className={cx('grid size-11 place-items-center rounded-full text-2xl', b.earned ? 'bg-gradient-to-br from-[#fff0b3] to-[#e9c766]' : 'bg-white grayscale opacity-50')}>
+            <span className={cx('grid size-11 place-items-center rounded-full text-2xl', b.earned ? 'bg-gradient-to-br from-[#fff0b3] to-[#e9c766]' : 'bg-surface grayscale opacity-50')}>
               {b.icon}
             </span>
             <span className={cx('mt-1.5 text-[11px] leading-tight font-semibold', !b.earned && 'text-muted')}>{b.label}</span>

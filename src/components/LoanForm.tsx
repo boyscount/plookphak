@@ -79,7 +79,7 @@ export function LoanFields({ draft, onChange }: { draft: LoanDraft; onChange: (d
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <div className="sm:col-span-2">
-        <span className="mb-1.5 block text-sm font-semibold text-[#3a3a44]">รูปแบบการจ่ายดอกเบี้ย</span>
+        <span className="mb-1.5 block text-sm font-semibold text-ink/80">รูปแบบการจ่ายดอกเบี้ย</span>
         <div className="grid grid-cols-2 gap-2" role="radiogroup">
           {MODES.map((m) => (
             <button

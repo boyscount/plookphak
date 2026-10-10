@@ -42,7 +42,7 @@ export function Activity() {
               <li key={n.id}>
                 <button
                   onClick={() => open(n.loan_id)}
-                  className={cx('flex w-full gap-3 rounded-2xl p-3.5 text-left', n.read_at ? 'bg-white' : 'bg-brand-50')}
+                  className={cx('flex w-full gap-3 rounded-2xl p-3.5 text-left', n.read_at ? 'bg-surface' : 'bg-brand-50')}
                 >
                   <span className={cx('mt-2 size-2.5 shrink-0 rounded-full', n.read_at ? 'bg-transparent' : 'bg-[#ff6fd1]')} />
                   <span className="min-w-0 flex-1">

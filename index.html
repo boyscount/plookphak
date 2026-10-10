@@ -14,6 +14,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <title>Plookphak</title>
+    <script>
+      // ตั้งธีมก่อนวาดหน้า กันจอกระพริบขาวตอนเปิดในโหมดมืด
+      try {
+        var t = localStorage.getItem('plookphak:theme')
+        if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t)
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

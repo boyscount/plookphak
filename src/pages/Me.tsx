@@ -6,6 +6,7 @@ import { COVERS, CoverSwatch } from '../components/Cover'
 import { GearIcon, KeyIcon, LogoutIcon, ShieldIcon } from '../components/icons'
 import { Avatar, Card, cx, EmptyState, ErrorText, Field, Input, Pill, Sheet, Spinner, Tabs } from '../components/ui'
 import { useAuth } from '../lib/auth'
+import { useTheme, type ThemePref } from '../lib/theme'
 import { fmtDateTime } from '../lib/format'
 import { must, useProfiles, useSettings } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
@@ -42,6 +43,10 @@ export function Me() {
         </Pill>
       </div>
 
+      <div className="mt-4 px-4 sm:px-6">
+        <ThemeSwitch />
+      </div>
+
       {isSuper && (
         <>
           <div className="mt-6 px-4 sm:px-6">
@@ -62,6 +67,38 @@ export function Me() {
       {avatarOpen && (
         <StyleSheet avatar={profile?.avatar ?? 'person'} cover={profile?.cover ?? 'violet'} onClose={() => setAvatarOpen(false)} />
       )}
+    </div>
+  )
+}
+
+const THEME_OPTIONS: { id: ThemePref; label: string; icon: string }[] = [
+  { id: 'auto', label: 'ตามเครื่อง', icon: '🖥️' },
+  { id: 'light', label: 'สว่าง', icon: '☀️' },
+  { id: 'dark', label: 'มืด', icon: '🌙' },
+]
+
+function ThemeSwitch() {
+  const [pref, setPref] = useTheme()
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-3xl bg-surface p-3 pl-4">
+      <span className="font-semibold">ธีมแอป</span>
+      <div className="flex gap-1 rounded-full bg-pill p-1" role="radiogroup" aria-label="ธีมแอป">
+        {THEME_OPTIONS.map((o) => (
+          <button
+            key={o.id}
+            type="button"
+            role="radio"
+            aria-checked={pref === o.id}
+            onClick={() => setPref(o.id)}
+            className={cx(
+              'rounded-full px-3 py-1.5 text-sm font-semibold transition',
+              pref === o.id ? 'bg-surface text-brand-700 shadow' : 'text-muted',
+            )}
+          >
+            {o.icon} {o.label}
+          </button>
+        ))}
+      </div>
     </div>
   )
 }
@@ -303,7 +340,7 @@ function AuditLog() {
               )
             : []
         return (
-          <li key={r.id} className="rounded-2xl bg-white p-3.5">
+          <li key={r.id} className="rounded-2xl bg-surface p-3.5">
             <div className="flex items-center gap-2">
               <ShieldIcon className="size-5 text-brand-600" />
               <span className="font-semibold">

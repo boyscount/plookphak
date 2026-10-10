@@ -17,6 +17,82 @@
   --color-danger: #e5383b;
   --color-ok: #14a06b;
   --color-warn: #f59f00;
+  --color-surface: #ffffff;
+  --color-pill-hover: #dcdce3;
+  --color-line: #0000000f;
+}
+
+/* สีกราฟเงินต้น/ดอก/ค่าปรับ — ผ่าน dataviz validator ทั้งสว่าง (#fff) และมืด (#1a1722) */
+:root {
+  color-scheme: light;
+  --money-principal: #7432ea;
+  --money-interest: #1baf7a;
+  --money-penalty: #eb6834;
+}
+
+/* ---------------------------------------------------------------------------
+   โหมดมืด: data-theme="dark" (เลือกเอง) หรือตามระบบเมื่อไม่ได้บังคับสว่าง
+   ค่าเดียวกันสองชุด — แก้ที่หนึ่งต้องแก้อีกที่
+   --------------------------------------------------------------------------- */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-canvas: #0e0c13;
+  --color-surface: #1a1722;
+  --color-pill: #2a2633;
+  --color-pill-hover: #353041;
+  --color-line: #ffffff14;
+  --color-ink: #f3f1f8;
+  --color-muted: #a7a2b4;
+  --color-brand-50: #251b3f;
+  --color-brand-100: #33245a;
+  --color-brand-700: #c9b0ff;
+  --color-brand-900: #3a2470;
+  --color-danger: #ff6b6e;
+  --color-ok: #34d399;
+  --color-emerald-50: #0f2a21;
+  --color-emerald-100: #12352a;
+  --color-red-50: #3a1519;
+  --color-red-100: #47191e;
+  --color-sky-100: #0f2c3d;
+  --color-sky-700: #7dd3fc;
+  --color-sky-800: #93dcfd;
+  --color-amber-100: #3d2c0b;
+  --color-amber-700: #fbbf24;
+  --color-amber-800: #fcd34d;
+  --money-principal: #9a6bff;
+  --money-interest: #199e70;
+  --money-penalty: #d95926;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --color-canvas: #0e0c13;
+    --color-surface: #1a1722;
+    --color-pill: #2a2633;
+    --color-pill-hover: #353041;
+    --color-line: #ffffff14;
+    --color-ink: #f3f1f8;
+    --color-muted: #a7a2b4;
+    --color-brand-50: #251b3f;
+    --color-brand-100: #33245a;
+    --color-brand-700: #c9b0ff;
+    --color-brand-900: #3a2470;
+    --color-danger: #ff6b6e;
+    --color-ok: #34d399;
+    --color-emerald-50: #0f2a21;
+    --color-emerald-100: #12352a;
+    --color-red-50: #3a1519;
+    --color-red-100: #47191e;
+    --color-sky-100: #0f2c3d;
+    --color-sky-700: #7dd3fc;
+    --color-sky-800: #93dcfd;
+    --color-amber-100: #3d2c0b;
+    --color-amber-700: #fbbf24;
+    --color-amber-800: #fcd34d;
+    --money-principal: #9a6bff;
+    --money-interest: #199e70;
+    --money-penalty: #d95926;
+  }
 }
 
 html,

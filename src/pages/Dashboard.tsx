@@ -61,7 +61,7 @@ function Stat({ label, value, tone, onClick }: { label: string; value: React.Rea
     </>
   )
   return onClick ? (
-    <button type="button" onClick={onClick} className="rise-in rounded-3xl bg-white p-4 text-left active:scale-[.98]">
+    <button type="button" onClick={onClick} className="rise-in rounded-3xl bg-surface p-4 text-left active:scale-[.98]">
       {body}
     </button>
   ) : (
@@ -71,7 +71,7 @@ function Stat({ label, value, tone, onClick }: { label: string; value: React.Rea
 
 export function BorrowerRow({ r }: { r: ReturnType<typeof useBorrowerRows>['rows'][number] }) {
   return (
-    <Link to={`/borrowers/${r.person.id}`} className="flex min-w-0 items-center gap-3 rounded-2xl bg-white p-3.5 active:bg-pill">
+    <Link to={`/borrowers/${r.person.id}`} className="flex min-w-0 items-center gap-3 rounded-2xl bg-surface p-3.5 active:bg-pill">
       <Avatar name={r.person.aka} avatar={r.person.avatar} size="sm" />
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-2">

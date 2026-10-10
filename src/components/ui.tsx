@@ -17,7 +17,7 @@ export function Pill({
   tone?: 'gray' | 'brand' | 'dark' | 'danger' | 'ok'
 }) {
   const tones = {
-    gray: 'bg-pill text-ink hover:bg-[#dcdce3]',
+    gray: 'bg-pill text-ink hover:bg-pill-hover',
     brand: 'bg-brand-600 text-white hover:bg-brand-700',
     dark: 'bg-brand-900 text-white hover:bg-black',
     danger: 'bg-danger text-white hover:brightness-95',
@@ -152,7 +152,7 @@ export function EmptyState({ title, subtitle }: { title: string; subtitle?: stri
   return (
     <div className="flex flex-col items-center py-14 text-center">
       <NotebookArt />
-      <p className="mt-6 text-xl font-semibold text-[#5b5b66]">{title}</p>
+      <p className="mt-6 text-xl font-semibold text-muted">{title}</p>
       {subtitle && <p className="mt-2 text-muted">{subtitle}</p>}
     </div>
   )
@@ -187,7 +187,7 @@ export function Sheet({
         role="dialog"
         aria-modal
         aria-label={title}
-        className="pb-safe max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 sm:max-w-lg sm:rounded-3xl"
+        className="pb-safe max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-surface p-5 sm:max-w-lg sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-pill sm:hidden" />
@@ -214,7 +214,7 @@ export function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-sm font-semibold text-[#3a3a44]">{label}</span>
+      <span className="mb-1.5 block text-sm font-semibold text-ink/80">{label}</span>
       {children}
       {hint && <span className="mt-1 block text-xs text-muted">{hint}</span>}
     </label>
@@ -226,7 +226,7 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
     <input
       {...props}
       className={cx(
-        'h-12 w-full rounded-2xl border-2 border-transparent bg-pill px-4 text-base outline-none focus:border-brand-500 focus:bg-white',
+        'h-12 w-full rounded-2xl border-2 border-transparent bg-pill px-4 text-base outline-none focus:border-brand-500 focus:bg-surface',
         props.className,
       )}
     />
@@ -234,7 +234,7 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
 }
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cx('rounded-3xl bg-white p-4 shadow-[0_1px_0_#0000000d] sm:p-5', className)}>{children}</div>
+  return <div className={cx('rounded-3xl bg-surface p-4 shadow-[0_1px_0_#0000000d] sm:p-5', className)}>{children}</div>
 }
 
 export function ErrorText({ error }: { error?: string | null }) {

@@ -148,7 +148,7 @@ function EmptyLoanCard() {
           <p className="text-sm text-muted">เมื่อมีรายการยืม ข้อมูลจะแสดงตรงนี้</p>
         </div>
       </div>
-      <div className="mt-3 divide-y divide-[#0000000d] text-[15px]">
+      <div className="mt-3 divide-y divide-line text-[15px]">
         {LOAN_FIELDS.map((f) => (
           <Row key={f} label={f} value={<span className="text-muted">–</span>} />
         ))}

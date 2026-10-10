@@ -120,7 +120,7 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
       {s.daily && live && <DayStrip days={dailyHistory(loan, loan.payments, now, 14).filter((d) => d.status !== 'none')} />}
       {live && s.state === 'paid' && <Confetti id={loan.id} />}
 
-      <div className="divide-y divide-[#0000000d] text-[15px]">
+      <div className="divide-y divide-line text-[15px]">
         <Row label="รูปแบบการจ่ายดอกเบี้ย" value={s.daily ? `รายวัน ก่อน ${(loan.daily_cutoff ?? '17:00').slice(0, 5)} น.` : 'พร้อมเงินต้น'} />
         <Row label="จำนวนเงินที่ยืม" value={fmtBaht(Number(loan.principal))} />
         <Row label="วันที่ยืม" value={fmtDate(loan.borrowed_on)} />

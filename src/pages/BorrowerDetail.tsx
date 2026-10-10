@@ -105,7 +105,7 @@ export function BorrowerDetail() {
               <EmptyState title="ไม่มียอดค้าง" subtitle="เงียบจังเลย…เงียบไปแล้ว…" />
             )}
             {closed.length > 0 && (
-              <details className="rounded-3xl bg-white p-4">
+              <details className="rounded-3xl bg-surface p-4">
                 <summary className="cursor-pointer font-semibold">รายการที่ปิดแล้ว ({closed.length})</summary>
                 <div className="mt-4 grid gap-4 lg:grid-cols-2">
                   {closed.map((l) => (

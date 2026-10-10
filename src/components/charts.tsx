@@ -6,9 +6,10 @@ import type { DayStatus } from '../lib/loanMath'
 import { cx } from './ui'
 
 export const MONEY_COLORS = {
-  principal: '#7432ea', // เงินต้น
-  interest: '#1baf7a', // ดอกเบี้ย
-  penalty: '#eb6834', // ค่าปรับ
+  // ค่าจริงอยู่ใน index.css (--money-*) แยกสว่าง/มืด ผ่าน validator ทั้งสองโหมด
+  principal: 'var(--money-principal)', // เงินต้น
+  interest: 'var(--money-interest)', // ดอกเบี้ย
+  penalty: 'var(--money-penalty)', // ค่าปรับ
 }
 
 /** ตัวเลขวิ่งขึ้นตอนเปิดหน้า แล้วตามค่าจริงแบบนุ่ม ๆ */
@@ -49,8 +50,8 @@ export function ProgressRing({
   value,
   size = 96,
   stroke = 10,
-  color = '#7432ea',
-  track = '#ece6fb',
+  color = 'var(--money-principal)',
+  track = 'var(--color-brand-100)',
   label,
   sub,
 }: {
@@ -142,7 +143,7 @@ export function StackedBar({ segments, height = 14 }: { segments: Segment[]; hei
 /** แท่งรายวันแนวตั้ง มี tooltip ตอนชี้/แตะ */
 export function DailyBars({
   data,
-  color = '#7432ea',
+  color = 'var(--money-principal)',
   height = 140,
 }: {
   data: { key: string; label: string; short: string; value: number }[]
@@ -157,14 +158,14 @@ export function DailyBars({
     <div className="relative select-none" onMouseLeave={() => setActive(null)}>
       {a && (
         <div
-          className="pointer-events-none absolute -top-2 z-10 -translate-x-1/2 -translate-y-full rounded-xl bg-ink px-3 py-1.5 text-xs whitespace-nowrap text-white shadow-lg"
+          className="pointer-events-none absolute -top-2 z-10 -translate-x-1/2 -translate-y-full rounded-xl bg-black/85 px-3 py-1.5 text-xs whitespace-nowrap text-white shadow-lg"
           style={{ left: `${(active! + 0.5) * W}%` }}
         >
           <div className="text-white/70">{a.label}</div>
           <div className="tabular font-semibold">{fmtBaht(a.value)}</div>
         </div>
       )}
-      <div className="flex items-end gap-[2px] border-b border-[#0000001a]" style={{ height }}>
+      <div className="flex items-end gap-[2px] border-b border-line" style={{ height }}>
         {data.map((d, i) => (
           <button
             key={d.key}
@@ -200,7 +201,7 @@ export function DailyBars({
 /** อันดับแนวนอน สีเดียว (ขนาด) */
 export function RankBars({
   rows,
-  color = '#7432ea',
+  color = 'var(--money-principal)',
   onPick,
 }: {
   rows: { key: string; label: React.ReactNode; value: number }[]
@@ -232,7 +233,7 @@ const dayStyle: Record<DayStatus, { cls: string; icon: string; label: string }> 
   late: { cls: 'bg-amber-100 text-amber-700', icon: '!', label: 'จ่ายช้า' },
   missed: { cls: 'bg-red-100 text-danger', icon: '✕', label: 'ยังไม่จ่าย' },
   today: { cls: 'bg-brand-50 text-brand-700 ring-2 ring-brand-400', icon: '•', label: 'รอบวันนี้' },
-  none: { cls: 'bg-pill text-[#b9b9c2]', icon: '–', label: 'ยังไม่เริ่ม' },
+  none: { cls: 'bg-pill text-muted/60', icon: '–', label: 'ยังไม่เริ่ม' },
 }
 
 /** แถบประวัติดอกรายวัน: สถานะมีไอคอน + คำอธิบาย ไม่ใช้สีอย่างเดียว */

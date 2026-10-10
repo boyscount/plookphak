@@ -29,7 +29,7 @@ export function AppShell() {
   return (
     <div className="mx-auto min-h-dvh max-w-5xl pb-28">
       <Outlet />
-      <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-[#0000000f] bg-white/95 backdrop-blur">
+      <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-xl items-start px-2">
           {item('/', 'หน้าแรก', <HomeIcon />)}
           {item('/browse', isStaff ? 'เรียกดู' : 'ประวัติ', <SearchIcon />)}

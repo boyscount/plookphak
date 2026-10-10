@@ -4,6 +4,7 @@ import { AppShell } from './components/AppShell'
 import { Spinner } from './components/ui'
 import { AuthProvider, useAuth } from './lib/auth'
 import { supabase } from './lib/supabase'
+import { ThemeProvider } from './lib/theme'
 import { Activity } from './pages/Activity'
 import { BorrowerDetail } from './pages/BorrowerDetail'
 import { BorrowerHome } from './pages/BorrowerHome'
@@ -51,12 +52,14 @@ function Routed() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routed />
-        </BrowserRouter>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routed />
+          </BrowserRouter>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }
