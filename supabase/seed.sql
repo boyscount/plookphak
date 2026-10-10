@@ -10,10 +10,10 @@ select id, 5000, current_date - 10, current_date - 9, 50, now() - interval '5 ho
 from public.profiles where username = 'somchai';
 -- จ่ายดอกรายวัน ตัดรอบ 17:00: จ่ายดอกวันแรกแล้ว วันนี้ยังไม่จ่าย
 insert into public.loans (borrower_id, principal, borrowed_on, interest_start_on, daily_interest, due_at, hourly_penalty, interest_mode, daily_cutoff)
-select id, 1500, current_date - 2, current_date - 1, 30, now() + interval '5 days', 20, 'daily', '17:00'
+select id, 1500, current_date - 5, current_date - 4, 30, now() + interval '5 days', 20, 'daily', '17:00'
 from public.profiles where username = 'nid';
 insert into public.payments (loan_id, amount, method, paid_at, status)
-select l.id, 30, 'cash', ((current_date - 1)::timestamp + time '12:00') at time zone 'Asia/Bangkok', 'approved'
+select l.id, 30, 'cash', ((current_date - 4)::timestamp + time '12:00') at time zone 'Asia/Bangkok', 'approved'
 from public.loans l join public.profiles p on p.id = l.borrower_id where p.username = 'nid';
 
 -- ประวัติจ่ายบางส่วนของชายหนุ่ม ให้กราฟเงินเข้ามีข้อมูล

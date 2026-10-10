@@ -5,6 +5,7 @@ import { loanSnapshot } from '../lib/loanMath'
 import { must, signedSlipUrl, uploadSlip, useRefreshMoney } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import type { Loan, Payment } from '../lib/types'
+import { DayPicker } from './DayPicker'
 import { cx, ErrorText, Field, Input, Pill, Sheet } from './ui'
 
 const statusText = {
@@ -38,6 +39,7 @@ export function PaymentList({ payments, title }: { payments: (Payment & { aka?: 
                 </span>
                 <span className="block text-sm text-muted">
                   {p.method === 'cash' ? 'เงินสด' : 'โอน'} · {fmtDateTime(p.paid_at)}
+                  {p.note && <span className="block truncate text-brand-700">{p.note}</span>}
                 </span>
               </span>
               <span className={cx('rounded-full px-2.5 py-1 text-xs font-semibold', statusText[p.status].c)}>
@@ -139,9 +141,12 @@ export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boole
   const [loanId, setLoanId] = useState('')
   const [file, setFile] = useState<File | null>(null)
   const [amount, setAmount] = useState('')
+  const [through, setThrough] = useState<number | null>(null)
+  const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState(false)
+  const [openedAt] = useState(() => Date.now())
 
   const selected = unpaid.find((l) => l.id === loanId) ?? unpaid[0]
   const snap = selected ? loanSnapshot(selected, selected.payments, Date.now()) : null
@@ -157,7 +162,9 @@ export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boole
     try {
       const path = await uploadSlip(selected.id, file)
       await must(
-        supabase.from('payments').insert({ loan_id: selected.id, amount: Number(amount), method: 'transfer', slip_path: path }),
+        supabase
+          .from('payments')
+          .insert({ loan_id: selected.id, amount: Number(amount), method: 'transfer', slip_path: path, note: note || null }),
       )
       refresh()
       setDone(true)
@@ -171,6 +178,8 @@ export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boole
   function close() {
     setFile(null)
     setAmount('')
+    setThrough(null)
+    setNote('')
     setDone(false)
     setError(null)
     onClose()
@@ -196,7 +205,11 @@ export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boole
               <select
                 className="h-12 w-full rounded-2xl bg-pill px-4"
                 value={selected.id}
-                onChange={(e) => setLoanId(e.target.value)}
+                onChange={(e) => {
+                  setLoanId(e.target.value)
+                  setThrough(null)
+                  setNote('')
+                }}
               >
                 {unpaid.map((l) => (
                   <option key={l.id} value={l.id}>
@@ -217,17 +230,53 @@ export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boole
               </span>
             )}
           </label>
-          <Field label="ยอดที่โอน (บาท)" hint={`ยอดคงเหลือทั้งหมด ${fmtBaht(balance)}`}>
+          {snap?.daily && (
+            <DayPicker
+              key={selected.id}
+              loan={selected}
+              payments={selected.payments}
+              atMs={openedAt}
+              through={through}
+              onChange={(k, amt, label) => {
+                setThrough(k)
+                setNote(label)
+                setAmount(amt ? String(amt) : '')
+              }}
+            />
+          )}
+          <Field
+            label="ยอดที่โอน (บาท)"
+            hint={snap?.daily ? `ปิดยอดทั้งหมด (รวมเงินต้นและค่าปรับ) ${fmtBaht(balance)}` : `ยอดคงเหลือทั้งหมด ${fmtBaht(balance)}`}
+          >
             <div className="flex gap-2">
-              <Input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
-              {roundAmount > 0 && (
+              <Input
+                type="number"
+                inputMode="decimal"
+                value={amount}
+                onChange={(e) => {
+                  // แก้ยอดเอง = ไม่ผูกกับวันที่เลือกแล้ว
+                  setAmount(e.target.value)
+                  setThrough(null)
+                  setNote('')
+                }}
+                placeholder="0"
+              />
+              {!snap?.daily && roundAmount > 0 && (
                 <button type="button" className="shrink-0 rounded-2xl bg-brand-50 px-3 text-sm font-semibold text-brand-700" onClick={() => setAmount(String(roundAmount))}>
                   {snap!.arrearsAmount > 0 ? 'ยอดค้าง' : 'ดอกรอบนี้'}
                   <span className="block text-xs">{fmtBaht(roundAmount)}</span>
                 </button>
               )}
-              <button type="button" className="shrink-0 rounded-2xl bg-pill px-4 text-sm font-semibold" onClick={() => setAmount(String(balance))}>
-                เต็มยอด
+              <button
+                type="button"
+                className="shrink-0 rounded-2xl bg-pill px-4 text-sm font-semibold"
+                onClick={() => {
+                  setAmount(String(balance))
+                  setThrough(null)
+                  setNote(snap?.daily ? 'ปิดยอดทั้งหมด' : '')
+                }}
+              >
+                {snap?.daily ? 'ปิดยอด' : 'เต็มยอด'}
               </button>
             </div>
           </Field>
@@ -249,7 +298,10 @@ export function CashSheet({ loan, open, onClose }: { loan: Loan; open: boolean; 
   const [note, setNote] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const balance = loanSnapshot(loan, loan.payments, Date.parse(fromLocalInput(paidAt))).balance
+  const [through, setThrough] = useState<number | null>(null)
+  const atMs = Date.parse(fromLocalInput(paidAt))
+  const balance = loanSnapshot(loan, loan.payments, atMs).balance
+  const daily = loan.interest_mode === 'daily'
 
   async function save() {
     if (!Number(amount)) return setError('ใส่ยอดเงิน')
@@ -280,8 +332,29 @@ export function CashSheet({ loan, open, onClose }: { loan: Loan; open: boolean; 
     <Sheet open={open} onClose={onClose} title="รับเงินสด">
       <div className="space-y-4">
         <Field label="เวลาที่รับเงิน" hint="ค่าปรับหยุดที่เวลานี้ถ้าจ่ายครบ">
-          <Input type="datetime-local" value={paidAt} onChange={(e) => setPaidAt(e.target.value)} />
+          <Input
+            type="datetime-local"
+            value={paidAt}
+            onChange={(e) => {
+              setPaidAt(e.target.value)
+              setThrough(null)
+            }}
+          />
         </Field>
+        {daily && Number.isFinite(atMs) && (
+          <DayPicker
+            key={paidAt}
+            loan={loan}
+            payments={loan.payments}
+            atMs={atMs}
+            through={through}
+            onChange={(k, amt, label) => {
+              setThrough(k)
+              setNote(label)
+              setAmount(amt ? String(amt) : '')
+            }}
+          />
+        )}
         <Field label="ยอดที่รับ (บาท)" hint={`ยอดคงเหลือ ณ เวลานั้น ${fmtBaht(balance)}`}>
           <div className="flex gap-2">
             <Input type="number" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />

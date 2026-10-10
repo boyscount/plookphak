@@ -218,3 +218,77 @@ export function dailyHistory(loan: LoanTerms, payments: PaymentLike[], nowMs: nu
   }
   return out
 }
+
+export type PlanDay = {
+  index: number
+  date: string // YYYY-MM-DD ตามเวลาไทย
+  at: number // เวลาตัดรอบ
+  amount: number
+  covered: boolean
+  overdue: boolean
+  today: boolean
+}
+
+/**
+ * แบบรายวัน: แต่ละวันจ่ายแล้วหรือยัง (นับตามลำดับเวลา: เงินที่จ่ายตัดวันเก่าสุดก่อน เหมือนตัวคำนวณค่าปรับ)
+ * ใช้ทำปุ่มเลือกวันตอนอัปสลิป และบอกว่าจ่ายถึงวันไหนแล้ว
+ */
+export function dailyPlan(loan: LoanTerms, payments: PaymentLike[], nowMs: number, aheadDays = 7) {
+  const startDay = dateDayNumber(loan.interest_start_on)
+  const today = bkkDayNumber(nowMs)
+  const paid = validPayments(payments)
+    .filter((p) => p.at <= nowMs)
+    .reduce((s, p) => s + p.amount, 0)
+  const dueMs = Date.parse(loan.due_at)
+  const principal = Number(loan.principal)
+  const rate = Number(loan.daily_interest)
+
+  type Ob = { at: number; amount: number; day?: number }
+  const obs: Ob[] = []
+  for (let d = startDay; d <= today + aheadDays; d++) obs.push({ at: cutoffAt(loan, d - startDay), amount: rate, day: d })
+  obs.push({ at: dueMs, amount: principal })
+  obs.sort((a, b) => a.at - b.at)
+
+  let cum = 0
+  const days: PlanDay[] = []
+  let principalCovered = false
+  let principalAfterDay = -1 // เงินต้นครบกำหนดหลังวันที่ index นี้
+  for (const o of obs) {
+    cum += o.amount
+    const covered = cum <= paid + 1e-9
+    if (o.day === undefined) {
+      principalCovered = covered
+      principalAfterDay = days.length - 1
+      continue
+    }
+    days.push({
+      index: o.day - startDay,
+      date: new Date(o.day * DAY).toISOString().slice(0, 10),
+      at: o.at,
+      amount: rate,
+      covered,
+      overdue: !covered && o.at <= nowMs,
+      today: o.day === today,
+    })
+  }
+
+  /** ยอดที่ต้องจ่ายเพื่อให้ครอบคลุมถึงวัน k (รวมวันก่อนหน้าที่ยังค้าง และเงินต้นถ้าครบกำหนดก่อนวันนั้น) */
+  const amountThrough = (k: number) => {
+    const day = days.find((d) => d.index === k)
+    if (!day) return 0
+    const base = rate * (k + 1) + (dueMs <= day.at ? principal : 0)
+    return Math.max(0, round2(base - paid))
+  }
+
+  const lastCovered = [...days].reverse().find((d) => d.covered) ?? null
+  const firstOpen = days.find((d) => !d.covered) ?? null
+  return {
+    days,
+    paid: round2(paid),
+    paidThrough: lastCovered?.date ?? null,
+    firstOpen,
+    principalCovered,
+    principalAfterDay,
+    amountThrough,
+  }
+}

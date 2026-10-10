@@ -1,5 +1,5 @@
 import { fmtBaht, fmtDate, fmtDateTime, fmtDuration } from '../lib/format'
-import { dailyHistory, loanSnapshot, type LoanState } from '../lib/loanMath'
+import { dailyHistory, dailyPlan, loanSnapshot, type LoanState } from '../lib/loanMath'
 import { Confetti, CountUpBaht, DayStrip, MONEY_COLORS, ProgressRing, StackedBar } from './charts'
 import { useNow } from '../lib/queries'
 import type { Loan } from '../lib/types'
@@ -83,12 +83,18 @@ function Countdown({ loan, now }: { loan: Loan; now: number }) {
 export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?: React.ReactNode; live?: boolean }) {
   const now = useNow(live ? 1000 : 30_000)
   const s = loanSnapshot(loan, loan.payments, now)
+  const plan = s.daily ? dailyPlan(loan, loan.payments, now) : null
+  // แบบรายวัน: ยอดที่ต้องจ่ายตอนนี้ = ค้างอยู่ทั้งหมด หรือดอกรอบถัดไป
+  const roundDue = s.arrearsAmount > 0 ? s.arrearsAmount : (s.nextDue?.amount ?? 0)
   return (
     <Card className="rise-in space-y-4">
       <div className="flex items-center justify-between gap-2">
         <div>
-          <p className="text-sm text-muted">ยอดคงเหลือที่ต้องชำระ</p>
-          <CountUpBaht value={s.balance} className={cx('block text-3xl font-bold', s.balance > 0 && s.state === 'overdue' && 'text-danger')} />
+          <p className="text-sm text-muted">{plan && s.balance > 0 ? (s.arrearsAmount > 0 ? 'ดอกค้างที่ต้องจ่าย' : 'ดอกรอบถัดไป') : 'ยอดคงเหลือที่ต้องชำระ'}</p>
+          <CountUpBaht
+            value={plan && s.balance > 0 ? roundDue : s.balance}
+            className={cx('block text-3xl font-bold', s.balance > 0 && s.state === 'overdue' && 'text-danger')}
+          />
         </div>
         <StateBadge state={s.state} />
       </div>
@@ -126,14 +132,50 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
         <Row label="วันที่ยืม" value={fmtDate(loan.borrowed_on)} />
         <Row label="วันที่เริ่มคิดดอกเบี้ย" value={fmtDate(loan.interest_start_on)} />
         <Row label="ดอกเบี้ยต่อวัน" value={fmtBaht(Number(loan.daily_interest))} />
-        <Row label="รวมดอกเบี้ยที่ต้องชำระ" value={<>{fmtBaht(s.interest)} <span className="text-sm text-muted">({s.days} วัน)</span></>} />
-        <Row label="วันครบกำหนดชำระ" value={fmtDateTime(loan.due_at)} />
-        <Row label="ค่าปรับต่อชั่วโมง" value={fmtBaht(Number(loan.hourly_penalty))} />
-        {s.hours > 0 && <Row label={`ค่าปรับ (${s.hours} ชม.)`} value={<span className="text-danger">{fmtBaht(s.penalty)}</span>} />}
-        <Row label="จำนวนเงินที่ต้องชำระ" value={fmtBaht(s.total)} />
-        {s.approved > 0 && <Row label="ชำระแล้ว" value={<span className="text-ok">− {fmtBaht(s.approved)}</span>} />}
-        {s.pending > 0 && <Row label="รอตรวจสลิป" value={<span className="text-sky-700">− {fmtBaht(s.pending)}</span>} />}
-        <Row label="คงเหลือ" value={fmtBaht(s.balance)} strong />
+        {plan ? (
+          <>
+            {/* แบบรายวัน: ดอกที่จ่ายไปแล้วไม่ต้องนับรวมอีก — โชว์แค่ถึงวันไหน และรอบถัดไปเท่าไร */}
+            <Row
+              label="จ่ายดอกแล้ว"
+              value={plan.paidThrough ? `ถึง ${fmtDate(plan.paidThrough)} (${plan.days.filter((d) => d.covered).length} วัน)` : 'ยังไม่ได้จ่าย'}
+            />
+            {s.arrearsAmount > 0 && (
+              <Row
+                label={`ดอกค้าง (${plan.days.filter((d) => d.overdue).length} วัน)`}
+                value={<span className="text-danger">{fmtBaht(s.arrearsAmount)}</span>}
+              />
+            )}
+            <Row label="วันครบคืนเงินต้น" value={fmtDateTime(loan.due_at)} />
+            <Row label="เงินต้นคงเหลือ" value={plan.principalCovered ? <span className="text-ok">คืนแล้ว</span> : fmtBaht(Number(loan.principal))} />
+            <Row label="ค่าปรับต่อชั่วโมง" value={fmtBaht(Number(loan.hourly_penalty))} />
+            {s.penalty > 0 && (
+              <Row
+                label={`ค่าปรับสะสม (${s.hours} ชม.)`}
+                value={<span className="text-danger">{fmtBaht(s.penalty)}</span>}
+              />
+            )}
+            {s.pending > 0 && <Row label="รอตรวจสลิป" value={<span className="text-sky-700">{fmtBaht(s.pending)}</span>} />}
+            {s.nextDue && s.balance > 0 && (
+              <Row
+                label={s.arrearsAmount > 0 ? 'ต้องจ่ายตอนนี้ (เลยรอบแล้ว)' : `ต้องจ่ายภายใน ${fmtDateTime(s.nextDue.at)}`}
+                value={<span className={s.arrearsAmount > 0 ? 'text-danger' : ''}>{fmtBaht(roundDue)}</span>}
+                strong
+              />
+            )}
+            <Row label="ปิดยอดทั้งหมดตอนนี้" value={<span className="text-muted">{fmtBaht(s.balance)}</span>} />
+          </>
+        ) : (
+          <>
+            <Row label="รวมดอกเบี้ยที่ต้องชำระ" value={<>{fmtBaht(s.interest)} <span className="text-sm text-muted">({s.days} วัน)</span></>} />
+            <Row label="วันครบกำหนดชำระ" value={fmtDateTime(loan.due_at)} />
+            <Row label="ค่าปรับต่อชั่วโมง" value={fmtBaht(Number(loan.hourly_penalty))} />
+            {s.hours > 0 && <Row label={`ค่าปรับ (${s.hours} ชม.)`} value={<span className="text-danger">{fmtBaht(s.penalty)}</span>} />}
+            <Row label="จำนวนเงินที่ต้องชำระ" value={fmtBaht(s.total)} />
+            {s.approved > 0 && <Row label="ชำระแล้ว" value={<span className="text-ok">− {fmtBaht(s.approved)}</span>} />}
+            {s.pending > 0 && <Row label="รอตรวจสลิป" value={<span className="text-sky-700">− {fmtBaht(s.pending)}</span>} />}
+            <Row label="คงเหลือ" value={fmtBaht(s.balance)} strong />
+          </>
+        )}
       </div>
       {loan.note && <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted">📝 {loan.note}</p>}
       {actions}

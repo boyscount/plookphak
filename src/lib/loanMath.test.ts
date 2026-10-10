@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dailyHistory, loanSnapshot, owedAt, settledAt, type LoanTerms } from './loanMath'
+import { dailyHistory, dailyPlan, loanSnapshot, owedAt, settledAt, type LoanTerms } from './loanMath'
 
 // ยืม 1,000 ดอก 50/วัน เริ่มคิดดอก 1 ต.ค. ครบชำระ 5 ต.ค. 18:00 (ไทย) ปรับ 20/ชม.
 const loan: LoanTerms = {
@@ -146,5 +146,26 @@ describe('ข้อมูลกราฟ', () => {
     const pays = [pay(50, '2026-10-01T12:00:00+07:00'), pay(50, '2026-10-02T20:00:00+07:00')]
     const h = dailyHistory(daily, pays, t('2026-10-04T10:00:00+07:00'), 5)
     expect(h.map((x) => x.status)).toEqual(['none', 'on_time', 'late', 'missed', 'today'])
+  })
+})
+
+describe('เลือกวันจ่ายดอกรายวัน', () => {
+  it('จ่ายแล้ว 2 วัน → เปิดให้เลือกตั้งแต่วันที่ 3 และคิดยอดเฉพาะวันที่เลือก', () => {
+    const pays = [pay(100, '2026-10-02T10:00:00+07:00')]
+    const p = dailyPlan(daily, pays, t('2026-10-06T10:00:00+07:00'))
+    expect(p.paidThrough).toBe('2026-10-02')
+    expect(p.firstOpen?.date).toBe('2026-10-03')
+    // วันที่ 3–6 = 4 วัน
+    const d6 = p.days.find((d) => d.date === '2026-10-06')!
+    expect(p.amountThrough(d6.index)).toBe(200)
+    expect(p.days.filter((d) => d.overdue).map((d) => d.date)).toEqual(['2026-10-03', '2026-10-04', '2026-10-05'])
+  })
+
+  it('วันที่เลยวันคืนเงินต้น ต้องรวมเงินต้นในยอดด้วย', () => {
+    const p = dailyPlan(daily, [], t('2026-10-10T20:00:00+07:00'))
+    const d10 = p.days.find((d) => d.date === '2026-10-10')!
+    const d11 = p.days.find((d) => d.date === '2026-10-11')!
+    expect(p.amountThrough(d10.index)).toBe(500) // คืนต้น 18:00 หลังตัดรอบ 17:00
+    expect(p.amountThrough(d11.index)).toBe(1550)
   })
 })
