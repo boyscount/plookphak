@@ -1,9 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { GoldCard } from '../components/GoldCard'
 import { ErrorText, Field, Input, Logo, Pill } from '../components/ui'
 import { errorText, supabase, usernameToEmail } from '../lib/supabase'
 
 export function Login() {
+  // เข้าสู่ระบบแล้วต้องเริ่มที่หน้าแรกเสมอ ไม่ค้างหน้าเดิมก่อนออกจากระบบ (เช่น /me)
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  useEffect(() => {
+    if (pathname !== '/') navigate('/', { replace: true })
+  }, [pathname, navigate])
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [busy, setBusy] = useState(false)

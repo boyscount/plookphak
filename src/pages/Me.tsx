@@ -50,8 +50,9 @@ export function Me() {
       </div>
 
       {isStaff && (
-        <div className="mt-4 px-4 sm:px-6">
+        <div className="mt-4 space-y-4 px-4 sm:px-6">
           <PromptPaySettings />
+          <ExportCard withAudit={isSuper} />
         </div>
       )}
 
@@ -84,6 +85,48 @@ const THEME_OPTIONS: { id: ThemePref; label: string; icon: string }[] = [
   { id: 'light', label: 'สว่าง', icon: '☀️' },
   { id: 'dark', label: 'มืด', icon: '🌙' },
 ]
+
+/** staff: ดาวน์โหลดข้อมูลทั้งหมดเก็บไว้เอง (Excel อ่านง่าย / JSON สำรองไว้กู้คืน) */
+function ExportCard({ withAudit }: { withAudit: boolean }) {
+  const [busy, setBusy] = useState<'xlsx' | 'json' | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function run(kind: 'xlsx' | 'json') {
+    setBusy(kind)
+    setMsg(null)
+    setError(null)
+    try {
+      const mod = await import('../lib/exportData')
+      const r = kind === 'xlsx' ? await mod.exportExcel(withAudit) : await mod.exportJson(withAudit)
+      setMsg(`ดาวน์โหลดแล้ว: ${r.loans} รายการยืม · ${r.payments} การชำระ`)
+    } catch (e) {
+      setError(errorText(e))
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  return (
+    <Card className="space-y-3">
+      <h3 className="font-bold">📦 สำรอง / ส่งออกข้อมูล</h3>
+      <p className="text-sm text-muted">
+        เก็บไฟล์ไว้ในเครื่องหรือ Google Drive กันข้อมูลหาย ใช้เป็นหลักฐานยืม–คืนได้ (ไม่รวมรูปสลิป)
+        {withAudit && ' · รวมบันทึกระบบ'}
+      </p>
+      <div className="grid gap-2 sm:grid-cols-2">
+        <Pill tone="brand" disabled={!!busy} onClick={() => run('xlsx')}>
+          {busy === 'xlsx' ? 'กำลังสร้าง…' : '📊 Excel (.xlsx)'}
+        </Pill>
+        <Pill disabled={!!busy} onClick={() => run('json')}>
+          {busy === 'json' ? 'กำลังสร้าง…' : '🗄️ ไฟล์สำรอง (.json)'}
+        </Pill>
+      </div>
+      <ErrorText error={error} />
+      {msg && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-ok">✓ {msg}</p>}
+    </Card>
+  )
+}
 
 /** admin: ตั้งเลขพร้อมเพย์ที่ใช้รับเงิน — ผู้ยืมจะเห็น QR พร้อมยอดตอนอัปสลิป */
 function PromptPaySettings() {
