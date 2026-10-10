@@ -50,7 +50,8 @@ ok(!!(await somchai.from('payments').update({ status: 'approved' }).eq('id', ins
 ok(!!(await nid.storage.from('slips').download(path)).error, 'คนอื่นเปิดสลิปไม่ได้')
 
 // admin
-ok((await admin.from('loans').select('*')).data.length === 2, 'admin เห็นทุก loan')
+const adminLoans = (await admin.from('loans').select('id')).data
+ok(adminLoans.length > mine.length && adminLoans.some((l) => l.id === nidLoan), 'admin เห็นทุก loan (รวมของคนอื่น)')
 ok((await admin.from('notifications').select('*')).data.some(n => n.title.includes('ส่งสลิป')), 'admin ได้แจ้งเตือนสลิปใหม่')
 ok(!(await admin.storage.from('slips').download(path)).error, 'admin เปิดสลิปได้')
 const appr = await admin.from('payments').update({ status: 'rejected', reject_reason: 'ยอดไม่ตรง' }).eq('id', ins.data.id).select().single()
@@ -66,6 +67,22 @@ ok(!!(await admin.rpc('create_account', { p_username: 'adm2', p_password: 'pass1
 ok(!!(await admin.rpc('set_password', { p_user: (await boss.auth.getUser()).data.user.id, p_password: 'zzzzzz' })).error, 'admin เปลี่ยนรหัส super ไม่ได้')
 ok(!!(await admin.from('audit_log').select('*')).data?.length === false, 'admin ดู audit ไม่ได้')
 ok(!!(await admin.from('app_settings').update({ max_admins: 9 }).eq('id', 1).select()).data?.length === false, 'admin แก้โควตาไม่ได้')
+
+// คำขอเลื่อน/ผ่อน + พร้อมเพย์
+const newDue = new Date(Date.now() + 20 * 86400000).toISOString()
+const rq = await somchai.from('loan_requests').insert({ loan_id: mine[0].id, kind: 'extend', proposed_due_at: newDue, message: 'ขอเลื่อน', status: 'approved' }).select().single()
+ok(!rq.error && rq.data.status === 'pending', 'ผู้ยืมส่งคำขอได้ (บังคับ pending) ' + (rq.error?.message ?? ''))
+ok(!!(await somchai.from('loan_requests').insert({ loan_id: nidLoan, kind: 'installment', installments: 3, message: 'x' })).error, 'ส่งคำขอแทนคนอื่นไม่ได้')
+ok(!(await somchai.from('loan_requests').update({ status: 'approved' }).eq('id', rq.data.id).select()).data?.length, 'ผู้ยืมอนุมัติคำขอตัวเองไม่ได้')
+ok(!!(await nid.from('loan_requests').select('*')).data?.every((r) => r.borrower_id !== rq.data.borrower_id), 'ผู้ยืมไม่เห็นคำขอของคนอื่น')
+const ap = await admin.from('loan_requests').update({ status: 'approved', admin_note: 'ได้' }).eq('id', rq.data.id).select().single()
+ok(!ap.error, 'admin อนุมัติคำขอได้ ' + (ap.error?.message ?? ''))
+const moved = (await admin.from('loans').select('due_at').eq('id', mine[0].id).single()).data
+ok(Math.abs(Date.parse(moved.due_at) - Date.parse(newDue)) < 1000, 'อนุมัติเลื่อนแล้ววันครบกำหนดเปลี่ยนตาม')
+ok((await somchai.from('notifications').select('title')).data.some((n) => n.title.includes('อนุมัติ')), 'ผู้ยืมได้แจ้งเตือนผลคำขอ')
+ok(!!(await somchai.rpc('set_promptpay', { p_id: '0812345678', p_name: 'x' })).error, 'ผู้ยืมตั้งพร้อมเพย์ไม่ได้')
+ok(!(await admin.rpc('set_promptpay', { p_id: '081-234-5678', p_name: 'แอดมิน' })).error, 'admin ตั้งพร้อมเพย์ได้')
+ok((await somchai.from('app_settings').select('promptpay_id').single()).data.promptpay_id === '0812345678', 'ผู้ยืมอ่านเลขพร้อมเพย์ได้ (ตัดขีดแล้ว)')
 
 // super
 const a2 = await boss.rpc('create_account', { p_username: 'adm2', p_password: 'pass1234', p_aka: 'a2', p_role: 'admin' })

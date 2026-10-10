@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ProfileHeader } from '../components/AppShell'
 import { BadgeRow } from '../components/Badges'
+import { PayoffCalculatorSheet, RequestSheet } from '../components/BorrowerTools'
 import { GoldCard } from '../components/GoldCard'
 import { memberStats, TIER_LABEL, tierOf } from '../lib/tier'
 import { LoanCard, StateBadge } from '../components/LoanCard'
@@ -22,6 +23,8 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
   const { data: loans, isLoading } = useLoans()
   const [params, setParams] = useSearchParams()
   const [tab, setTab] = useState<Tab>(initialTab)
+  const [calcOpen, setCalcOpen] = useState(false)
+  const [reqOpen, setReqOpen] = useState(false)
   const now = useNow(1000)
 
   const payOpen = params.get('pay') === '1'
@@ -71,6 +74,8 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
         <Pill icon={<ListIcon />} onClick={() => setTab('history')}>
           ประวัติชำระ
         </Pill>
+        <Pill onClick={() => setCalcOpen(true)}>🧮 คำนวณปิดยอด</Pill>
+        <Pill onClick={() => setReqOpen(true)}>🙏 ขอเลื่อน/ผ่อน</Pill>
       </div>
 
       <div className="mt-6 px-4 sm:px-6">
@@ -123,6 +128,8 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
       </div>
 
       <SlipSheet loans={all} open={payOpen} onClose={() => setPayOpen(false)} />
+      <PayoffCalculatorSheet loans={all} open={calcOpen} onClose={() => setCalcOpen(false)} />
+      <RequestSheet loans={all} open={reqOpen} onClose={() => setReqOpen(false)} />
     </div>
   )
 }

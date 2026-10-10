@@ -7,6 +7,7 @@ import { GearIcon, KeyIcon, LogoutIcon, ShieldIcon } from '../components/icons'
 import { Avatar, Card, cx, EmptyState, ErrorText, Field, Input, Pill, Sheet, Spinner, Tabs } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { useTheme, type ThemePref } from '../lib/theme'
+import { isValidPromptPayId } from '../lib/promptpay'
 import { fmtDateTime } from '../lib/format'
 import { must, useProfiles, useSettings } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
@@ -14,7 +15,7 @@ import { roleLabel } from '../lib/types'
 import { PasswordSheet, ToggleActive } from './BorrowerDetail'
 
 export function Me() {
-  const { profile, isSuper } = useAuth()
+  const { profile, isSuper, isStaff } = useAuth()
   const [pwOpen, setPwOpen] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
   const [tab, setTab] = useState<'admins' | 'audit'>('admins')
@@ -47,6 +48,12 @@ export function Me() {
         <ThemeSwitch />
       </div>
 
+      {isStaff && (
+        <div className="mt-4 px-4 sm:px-6">
+          <PromptPaySettings />
+        </div>
+      )}
+
       {isSuper && (
         <>
           <div className="mt-6 px-4 sm:px-6">
@@ -76,6 +83,44 @@ const THEME_OPTIONS: { id: ThemePref; label: string; icon: string }[] = [
   { id: 'light', label: 'สว่าง', icon: '☀️' },
   { id: 'dark', label: 'มืด', icon: '🌙' },
 ]
+
+/** admin: ตั้งเลขพร้อมเพย์ที่ใช้รับเงิน — ผู้ยืมจะเห็น QR พร้อมยอดตอนอัปสลิป */
+function PromptPaySettings() {
+  const qc = useQueryClient()
+  const { data } = useSettings()
+  const [id, setId] = useState<string | null>(null)
+  const [name, setName] = useState<string | null>(null)
+  const [msg, setMsg] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const idValue = id ?? data?.promptpay_id ?? ''
+  const nameValue = name ?? data?.promptpay_name ?? ''
+
+  async function save() {
+    setError(null)
+    setMsg(null)
+    if (idValue && !isValidPromptPayId(idValue)) return setError('เลขพร้อมเพย์ต้องเป็นเบอร์มือถือ 10 หลัก หรือเลขบัตร 13 หลัก')
+    const { error } = await supabase.rpc('set_promptpay', { p_id: idValue, p_name: nameValue })
+    if (error) return setError(errorText(error))
+    qc.invalidateQueries({ queryKey: ['settings'] })
+    setMsg(idValue ? 'บันทึกแล้ว ผู้ยืมจะเห็น QR ตอนอัปสลิป' : 'ปิด QR พร้อมเพย์แล้ว')
+  }
+
+  return (
+    <Card className="space-y-3">
+      <h3 className="font-bold">💙 พร้อมเพย์สำหรับรับเงิน</h3>
+      <p className="text-sm text-muted">ผู้ยืมจะเห็น QR พร้อมยอดที่ต้องจ่ายตอนอัปสลิป สแกนจ่ายได้ทันที</p>
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Input inputMode="numeric" placeholder="เบอร์มือถือ / เลขบัตร 13 หลัก" value={idValue} onChange={(e) => setId(e.target.value)} />
+        <Input placeholder="ชื่อบัญชี (ให้ผู้ยืมเห็น)" value={nameValue} onChange={(e) => setName(e.target.value)} />
+      </div>
+      <ErrorText error={error} />
+      {msg && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-ok">✓ {msg}</p>}
+      <Pill tone="brand" className="w-full" onClick={save}>
+        บันทึก
+      </Pill>
+    </Card>
+  )
+}
 
 function ThemeSwitch() {
   const [pref, setPref] = useTheme()

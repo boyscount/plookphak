@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ProfileHeader } from '../components/AppShell'
+import { RequestReviewList } from '../components/BorrowerTools'
 import { GoldCard } from '../components/GoldCard'
 import { StateBadge } from '../components/LoanCard'
 import { PaymentList } from '../components/Payments'
@@ -12,7 +13,7 @@ import { useAuth } from '../lib/auth'
 import { memberStats, tierOf, type Tier } from '../lib/tier'
 import { fmtBaht, fmtDateTime } from '../lib/format'
 import { dailyPlan, loanSnapshot, type LoanState } from '../lib/loanMath'
-import { useLoans, useNow, useProfiles } from '../lib/queries'
+import { useLoanRequests, useLoans, useNow, useProfiles } from '../lib/queries'
 import { roleLabel, type Loan, type Profile } from '../lib/types'
 
 const severity: Record<LoanState, number> = { overdue: 0, grace: 1, pending_review: 2, not_due: 3, paid: 4 }
@@ -105,7 +106,9 @@ export function Dashboard() {
   const { profile } = useAuth()
   const navigate = useNavigate()
   const { rows, loans, isLoading, now } = useBorrowerRows()
-  const [tab, setTab] = useState<'attention' | 'slips' | 'all'>('attention')
+  const [tab, setTab] = useState<'attention' | 'slips' | 'requests' | 'all'>('attention')
+  const { data: requests } = useLoanRequests()
+  const pendingRequests = requests?.filter((r) => r.status === 'pending').length ?? 0
 
   const snaps = loans.map((l: Loan) => loanSnapshot(l, l.payments, now))
   const outstanding = snaps.reduce((s, x) => s + x.balance, 0)
@@ -212,6 +215,7 @@ export function Dashboard() {
           tabs={[
             { id: 'attention', label: 'ต้องติดตาม', badge: attention.length },
             { id: 'slips', label: 'สลิปรอตรวจ', badge: pending.length },
+            { id: 'requests', label: 'คำขอ', badge: pendingRequests },
             { id: 'all', label: 'ผู้ยืมทั้งหมด' },
           ]}
         />
@@ -221,6 +225,8 @@ export function Dashboard() {
           <Spinner />
         ) : tab === 'slips' ? (
           pending.length ? <PaymentList payments={pending} /> : <EmptyState title="ไม่มีสลิปรอตรวจ" />
+        ) : tab === 'requests' ? (
+          <RequestReviewList names={Object.fromEntries(rows.map((r) => [r.person.id, r.person.aka]))} />
         ) : (
           <BorrowerList rows={tab === 'all' ? rows : attention} empty={tab === 'all' ? 'ยังไม่มีผู้ยืม' : 'ไม่มีใครต้องติดตาม'} />
         )}

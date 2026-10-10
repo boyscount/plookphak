@@ -65,7 +65,34 @@ export function useMarkAllRead() {
 export function useSettings() {
   return useQuery({
     queryKey: ['settings'],
-    queryFn: () => must<{ max_admins: number }>(supabase.from('app_settings').select('*').single()),
+    queryFn: () =>
+      must<{ max_admins: number; promptpay_id: string | null; promptpay_name: string | null }>(
+        supabase.from('app_settings').select('*').single(),
+      ),
+  })
+}
+
+export type LoanRequest = {
+  id: string
+  loan_id: string
+  borrower_id: string
+  kind: 'extend' | 'installment'
+  proposed_due_at: string | null
+  installments: number | null
+  message: string
+  status: 'pending' | 'approved' | 'rejected'
+  admin_note: string | null
+  decided_at: string | null
+  created_at: string
+}
+
+/** คำขอเลื่อน/ผ่อน — RLS: ผู้ยืมเห็นของตัวเอง staff เห็นทั้งหมด */
+export function useLoanRequests() {
+  return useQuery({
+    queryKey: ['requests'],
+    queryFn: () =>
+      must<LoanRequest[]>(supabase.from('loan_requests').select('*').order('created_at', { ascending: false }).limit(100)),
+    refetchInterval: 60_000,
   })
 }
 

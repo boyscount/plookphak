@@ -7,6 +7,7 @@ import { must, uploadSlip, useRefreshMoney } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import type { Loan } from '../lib/types'
 import { DayPicker } from './DayPicker'
+import { PromptPayQR } from './PromptPayQR'
 import { cx, ErrorText, Field, Input, Pill, Row, Sheet } from './ui'
 
 type PayKind = 'daily' | 'principal'
@@ -242,6 +243,7 @@ export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boole
                   setAmount(amt ? String(amt) : '')
                 }}
               />
+              <PromptPayQR amount={Number(amount)} />
               {slipPicker}
               <Field label="ยอดที่โอน (บาท)" hint="คำนวณจากวันที่เลือก">
                 <Input type="number" value={amount} readOnly className="font-bold" />
@@ -252,6 +254,7 @@ export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boole
           {step === 'principal' && (
             <>
               {isDaily && <PayoffSummary loan={selected} atMs={openedAt} />}
+              <PromptPayQR amount={Number(amount)} />
               {slipPicker}
               <Field
                 label="ยอดที่โอน (บาท)"
