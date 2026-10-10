@@ -1,0 +1,10 @@
+// Cloudflare Workers (static assets) — ใช้เมื่อสร้างผ่าน "Import a repository"
+{
+  "name": "plookphak",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    // React Router: ทุก path ที่ไม่ใช่ไฟล์ ให้ส่ง index.html
+    "not_found_handling": "single-page-application"
+  }
+}
