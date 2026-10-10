@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ProfileHeader } from '../components/AppShell'
 import { GoldCard } from '../components/GoldCard'
@@ -9,6 +9,7 @@ import { Avatar, Card, cx, EmptyState, Input, Pill, Spinner, Tabs } from '../com
 import { PlusIcon } from '../components/icons'
 import { CountUpBaht, MONEY_COLORS, ProgressRing, RankBars, StackedBar } from '../components/charts'
 import { useAuth } from '../lib/auth'
+import { memberStats, tierOf, type Tier } from '../lib/tier'
 import { fmtBaht, fmtDateTime } from '../lib/format'
 import { dailyPlan, loanSnapshot, type LoanState } from '../lib/loanMath'
 import { useLoans, useNow, useProfiles } from '../lib/queries'
@@ -50,6 +51,7 @@ function useBorrowerRows() {
       paidRatio,
       overdueDays,
       principalLate,
+      tier: tierOf(memberStats(mine, now)),
       pending: mine.flatMap((l) => l.payments).filter((x) => x.status === 'pending').length,
     }
   })
@@ -234,9 +236,10 @@ const VIEW_KEY = 'plookphak:borrower-view'
 /** มุมมองที่เลือกไว้ จำเฉพาะเครื่องนี้ */
 function readView(): View {
   try {
-    return localStorage.getItem(VIEW_KEY) === 'grid' ? 'grid' : 'list'
+    // ค่าเริ่มต้นเป็นแบบการ์ด — เป็นรายการก็ต่อเมื่อเคยเลือกไว้
+    return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'grid'
   } catch {
-    return 'list'
+    return 'grid'
   }
 }
 
@@ -262,40 +265,83 @@ export function ModeChip({ mode, solid }: { mode: string; solid?: boolean }) {
 
 const shortDate = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short' })
 
-/** การ์ดแบบชั้นหนังสือ: ปกเป็นรูปแมว ป้ายรูปแบบดอก ป้ายค้าง แถบความคืบหน้า */
-function BorrowerTile({ r }: { r: Row }) {
+const TIER_ICON: Record<Tier, string> = { platinum: '💎', gold: '⭐', silver: '🥈' }
+
+/**
+ * การ์ดสะสมแบบชั้นหนังสือ: ปกเป็นรูปแมว ป้ายรูปแบบดอก ป้ายค้าง แถบความคืบหน้า
+ * เอียง 3D ตามนิ้ว/เมาส์ มีแสงสะท้อนตามจุดที่ชี้ และผิวฟอยล์ตามระดับบัตร
+ */
+function BorrowerTile({ r, index }: { r: Row; index: number }) {
   const a = avatarById(r.person.avatar)
   const late = r.overdueDays > 0 || r.principalLate
   const pct = Math.round(r.paidRatio * 100)
+  const card = useRef<HTMLDivElement>(null)
+
+  const onMove = (e: React.PointerEvent) => {
+    const el = card.current
+    if (!el) return
+    const b = el.getBoundingClientRect()
+    const x = (e.clientX - b.left) / b.width
+    const y = (e.clientY - b.top) / b.height
+    el.style.setProperty('--rx', `${(0.5 - y) * 16}deg`)
+    el.style.setProperty('--ry', `${(x - 0.5) * 18}deg`)
+    el.style.setProperty('--mx', `${x * 100}%`)
+    el.style.setProperty('--my', `${y * 100}%`)
+    el.style.setProperty('--glare', '1')
+  }
+  const onLeave = () => {
+    const el = card.current
+    if (!el) return
+    el.style.setProperty('--rx', '0deg')
+    el.style.setProperty('--ry', '0deg')
+    el.style.setProperty('--glare', '0')
+  }
+
   return (
-    <Link to={`/borrowers/${r.person.id}`} className="group block min-w-0 active:scale-[.98]">
+    <Link
+      to={`/borrowers/${r.person.id}`}
+      className="tile-in group block min-w-0 [perspective:800px]"
+      style={{ animationDelay: `${Math.min(index, 12) * 60}ms` }}
+      onPointerMove={onMove}
+      onPointerLeave={onLeave}
+      onPointerUp={onLeave}
+    >
       <div
-        className="relative aspect-[3/4] overflow-hidden rounded-2xl shadow-[0_10px_24px_-14px_rgb(40_15_90/.6)]"
+        ref={card}
+        className={cx('tile-card relative aspect-[3/4] overflow-hidden rounded-2xl', late && 'tile-late')}
         style={{ background: `radial-gradient(120% 80% at 50% 30%, #ffffff66, transparent 60%), ${a.bg}` }}
       >
-        <AvatarArt id={r.person.avatar} className="absolute inset-x-[12%] top-[8%] w-[76%] drop-shadow-lg transition group-hover:scale-105" />
+        <AvatarArt id={r.person.avatar} className="tile-art absolute inset-x-[12%] top-[8%] w-[76%] drop-shadow-lg" />
+        {/* ฟอยล์ตามระดับ + แสงสะท้อนตามนิ้ว */}
+        <div className={`tile-foil tile-foil-${r.tier}`} />
+        <div className="tile-glare" />
         <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
           {r.modes.map((m) => (
             <ModeChip key={m} mode={m} solid />
           ))}
         </div>
-        {r.pending > 0 && (
-          <span className="absolute top-2 right-2 rounded-full bg-sky-500 px-2 py-0.5 text-[11px] font-bold text-white">📩 {r.pending}</span>
-        )}
+        <div className="absolute top-2 right-2 flex flex-col items-end gap-1">
+          <span className="grid size-7 place-items-center rounded-full bg-black/25 text-sm backdrop-blur-sm" title={r.tier}>
+            {TIER_ICON[r.tier]}
+          </span>
+          {r.pending > 0 && <span className="rounded-full bg-sky-500 px-2 py-0.5 text-[11px] font-bold text-white">📩 {r.pending}</span>}
+        </div>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-3 pt-10 pb-2.5 text-white">
-          <div className="flex items-end justify-between gap-2">
-            <span className="tabular text-2xl leading-none font-bold">
-              {pct}
-              <span className="ml-0.5 text-xs font-semibold opacity-85">% จ่ายแล้ว</span>
-            </span>
-            {late ? (
-              <span className="shrink-0 rounded-lg bg-[#ff8a1f] px-2 py-0.5 text-xs font-bold">
-                {r.overdueDays > 0 ? `ค้าง ${r.overdueDays} วัน` : 'เลยกำหนด'}
-              </span>
-            ) : r.balance <= 0 ? (
-              <span className="shrink-0 rounded-lg bg-ok px-2 py-0.5 text-xs font-bold">จ่ายครบ</span>
-            ) : null}
-          </div>
+          {(late || r.balance <= 0) && (
+            <div className="mb-1.5 flex justify-end">
+              {late ? (
+                <span className="rounded-lg bg-[#ff8a1f] px-2 py-0.5 text-xs font-bold">
+                  {r.overdueDays > 0 ? `ค้าง ${r.overdueDays} วัน` : 'เลยกำหนด'}
+                </span>
+              ) : (
+                <span className="rounded-lg bg-ok px-2 py-0.5 text-xs font-bold">จ่ายครบ</span>
+              )}
+            </div>
+          )}
+          <span className="tabular block text-2xl leading-none font-bold whitespace-nowrap">
+            {pct}
+            <span className="ml-0.5 text-xs font-semibold opacity-85">% จ่ายแล้ว</span>
+          </span>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/30">
             <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
           </div>
@@ -353,8 +399,8 @@ function BorrowerList({ rows, empty }: { rows: Row[]; empty: string }) {
       </div>
       {view === 'grid' ? (
         <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map((r) => (
-            <BorrowerTile key={r.person.id} r={r} />
+          {rows.map((r, i) => (
+            <BorrowerTile key={r.person.id} r={r} index={i} />
           ))}
         </div>
       ) : (
