@@ -559,3 +559,19 @@ body {
     animation: none;
   }
 }
+
+/* Safari บน iPhone: ช่องวันที่/เวลาที่มีค่าแล้วแสดงเป็นช่องว่าง (ความสูงของค่าเป็นศูนย์) และจัดกลาง
+   — บังคับความสูงขั้นต่ำและชิดซ้ายเหมือนช่องอื่น */
+input[type='date'],
+input[type='datetime-local'],
+input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  min-height: 3rem;
+  line-height: normal;
+  text-align: left;
+}
+input::-webkit-date-and-time-value {
+  min-height: 1.5em;
+  text-align: left;
+}
