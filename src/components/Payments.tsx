@@ -1,11 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { fmtBaht, fmtDateTime, fromLocalInput, toLocalInput } from '../lib/format'
 import { loanSnapshot } from '../lib/loanMath'
-import { must, signedSlipUrl, uploadSlip, useRefreshMoney } from '../lib/queries'
+import { must, signedSlipUrl, useRefreshMoney } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import type { Loan, Payment } from '../lib/types'
 import { DayPicker } from './DayPicker'
+import { PayoffSummary } from './SlipSheet'
 import { cx, ErrorText, Field, Input, Pill, Sheet } from './ui'
 
 const statusText = {
@@ -134,162 +135,6 @@ function PaymentSheet({ payment, canReview, onClose }: { payment: Payment; canRe
   )
 }
 
-/** ผู้ยืม: อัปสลิป แล้วกด "ส่ง" ให้ admin ตรวจ */
-export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boolean; onClose: () => void }) {
-  const refresh = useRefreshMoney()
-  const unpaid = loans.filter((l) => loanSnapshot(l, l.payments, Date.now()).balance > 0)
-  const [loanId, setLoanId] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  const [amount, setAmount] = useState('')
-  const [through, setThrough] = useState<number | null>(null)
-  const [note, setNote] = useState('')
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState(false)
-  const [openedAt] = useState(() => Date.now())
-
-  const selected = unpaid.find((l) => l.id === loanId) ?? unpaid[0]
-  const snap = selected ? loanSnapshot(selected, selected.payments, Date.now()) : null
-  const balance = snap?.balance ?? 0
-  // แบบรายวัน: ยอดที่ต้องจ่ายตอนนี้ = ที่ค้างอยู่ หรือดอกรอบถัดไป
-  const roundAmount = snap?.daily ? (snap.arrearsAmount > 0 ? snap.arrearsAmount : (snap.nextDue?.amount ?? 0)) : 0
-  const preview = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
-
-  async function send() {
-    if (!selected || !file || !Number(amount)) return setError('เลือกสลิปและใส่ยอดเงินก่อน')
-    setBusy(true)
-    setError(null)
-    try {
-      const path = await uploadSlip(selected.id, file)
-      await must(
-        supabase
-          .from('payments')
-          .insert({ loan_id: selected.id, amount: Number(amount), method: 'transfer', slip_path: path, note: note || null }),
-      )
-      refresh()
-      setDone(true)
-    } catch (e) {
-      setError(errorText(e))
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  function close() {
-    setFile(null)
-    setAmount('')
-    setThrough(null)
-    setNote('')
-    setDone(false)
-    setError(null)
-    onClose()
-  }
-
-  return (
-    <Sheet open={open} onClose={close} title="อัปสลิป">
-      {done ? (
-        <div className="space-y-4 py-6 text-center">
-          <div className="text-6xl">✅</div>
-          <p className="text-lg font-semibold">ส่งสลิปแล้ว</p>
-          <p className="text-muted">ระบบหยุดนับค่าปรับ ณ เวลาที่ส่ง ถ้าสลิปไม่ผ่านการตรวจ ค่าปรับจะนับต่อ</p>
-          <Pill tone="brand" className="w-full" onClick={close}>
-            ตกลง
-          </Pill>
-        </div>
-      ) : !selected ? (
-        <p className="py-6 text-center text-muted">ไม่มียอดค้างชำระ 🎉</p>
-      ) : (
-        <div className="space-y-4">
-          {unpaid.length > 1 && (
-            <Field label="รายการที่จะจ่าย">
-              <select
-                className="h-12 w-full rounded-2xl bg-pill px-4"
-                value={selected.id}
-                onChange={(e) => {
-                  setLoanId(e.target.value)
-                  setThrough(null)
-                  setNote('')
-                }}
-              >
-                {unpaid.map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {fmtBaht(Number(l.principal))} · ครบ {fmtDateTime(l.due_at)}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          )}
-          <label className="block cursor-pointer">
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            {preview ? (
-              <img src={preview} alt="ตัวอย่างสลิป" className="max-h-72 w-full rounded-2xl bg-pill object-contain" />
-            ) : (
-              <span className="flex h-40 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-400 bg-brand-50 text-brand-700">
-                <span className="text-4xl">🧾</span>
-                <span className="mt-2 font-semibold">แตะเพื่อเลือกรูปสลิป</span>
-              </span>
-            )}
-          </label>
-          {snap?.daily && (
-            <DayPicker
-              key={selected.id}
-              loan={selected}
-              payments={selected.payments}
-              atMs={openedAt}
-              through={through}
-              onChange={(k, amt, label) => {
-                setThrough(k)
-                setNote(label)
-                setAmount(amt ? String(amt) : '')
-              }}
-            />
-          )}
-          <Field
-            label="ยอดที่โอน (บาท)"
-            hint={snap?.daily ? `ปิดยอดทั้งหมด (รวมเงินต้นและค่าปรับ) ${fmtBaht(balance)}` : `ยอดคงเหลือทั้งหมด ${fmtBaht(balance)}`}
-          >
-            <div className="flex gap-2">
-              <Input
-                type="number"
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => {
-                  // แก้ยอดเอง = ไม่ผูกกับวันที่เลือกแล้ว
-                  setAmount(e.target.value)
-                  setThrough(null)
-                  setNote('')
-                }}
-                placeholder="0"
-              />
-              {!snap?.daily && roundAmount > 0 && (
-                <button type="button" className="shrink-0 rounded-2xl bg-brand-50 px-3 text-sm font-semibold text-brand-700" onClick={() => setAmount(String(roundAmount))}>
-                  {snap!.arrearsAmount > 0 ? 'ยอดค้าง' : 'ดอกรอบนี้'}
-                  <span className="block text-xs">{fmtBaht(roundAmount)}</span>
-                </button>
-              )}
-              <button
-                type="button"
-                className="shrink-0 rounded-2xl bg-pill px-4 text-sm font-semibold"
-                onClick={() => {
-                  setAmount(String(balance))
-                  setThrough(null)
-                  setNote(snap?.daily ? 'ปิดยอดทั้งหมด' : '')
-                }}
-              >
-                {snap?.daily ? 'ปิดยอด' : 'เต็มยอด'}
-              </button>
-            </div>
-          </Field>
-          <ErrorText error={error} />
-          <Pill tone="brand" className="w-full" disabled={busy || !file} onClick={send}>
-            {busy ? 'กำลังส่ง…' : 'ส่งให้ผู้ดูแลตรวจ'}
-          </Pill>
-        </div>
-      )}
-    </Sheet>
-  )
-}
-
 /** admin: บันทึกรับเงินสด (หรือโอนที่ได้รับนอกระบบ) */
 export function CashSheet({ loan, open, onClose }: { loan: Loan; open: boolean; onClose: () => void }) {
   const refresh = useRefreshMoney()
@@ -302,6 +147,7 @@ export function CashSheet({ loan, open, onClose }: { loan: Loan; open: boolean; 
   const atMs = Date.parse(fromLocalInput(paidAt))
   const balance = loanSnapshot(loan, loan.payments, atMs).balance
   const daily = loan.interest_mode === 'daily'
+  const [kind, setKind] = useState<'daily' | 'principal'>('daily')
 
   async function save() {
     if (!Number(amount)) return setError('ใส่ยอดเงิน')
@@ -341,7 +187,34 @@ export function CashSheet({ loan, open, onClose }: { loan: Loan; open: boolean; 
             }}
           />
         </Field>
-        {daily && Number.isFinite(atMs) && (
+        {daily && (
+          <div className="grid grid-cols-2 gap-1 rounded-full bg-pill p-1" role="radiogroup" aria-label="แบบที่จ่าย">
+            {(
+              [
+                ['daily', '📅 ดอกรายวัน'],
+                ['principal', '💰 พร้อมเงินต้น'],
+              ] as const
+            ).map(([k, label]) => (
+              <button
+                key={k}
+                type="button"
+                role="radio"
+                aria-checked={kind === k}
+                onClick={() => {
+                  setKind(k)
+                  setThrough(null)
+                  setNote(k === 'principal' ? 'จ่ายพร้อมเงินต้น (ปิดยอด)' : '')
+                  setAmount(k === 'principal' ? String(balance) : '')
+                }}
+                className={cx('rounded-full py-2 text-sm font-semibold', kind === k ? 'bg-surface text-brand-700 shadow' : 'text-muted')}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+        {daily && kind === 'principal' && Number.isFinite(atMs) && <PayoffSummary loan={loan} atMs={atMs} />}
+        {daily && kind === 'daily' && Number.isFinite(atMs) && (
           <DayPicker
             key={paidAt}
             loan={loan}
