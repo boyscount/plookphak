@@ -35,6 +35,7 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
     <div>
       <ProfileHeader
         name={profile?.aka ?? ''}
+        avatar={profile?.avatar}
         subtitle={
           totalBalance > 0 ? (
             <span className={overdue ? 'font-semibold text-danger' : ''}>ค้างชำระ {fmtBaht(totalBalance)}</span>

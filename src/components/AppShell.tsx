@@ -6,7 +6,7 @@ import { BellIcon, HomeIcon, PlusIcon, SearchIcon } from './icons'
 
 /** เมนูล่าง 5 ช่องแบบในรูปต้นแบบ */
 export function AppShell() {
-  const { isStaff } = useAuth()
+  const { isStaff, profile } = useAuth()
   const navigate = useNavigate()
   const { data: notes } = useNotifications()
   const unread = notes?.filter((n) => !n.read_at).length ?? 0
@@ -51,11 +51,8 @@ export function AppShell() {
           >
             {({ isActive }) => (
               <>
-                <span className={cx('grid size-7 place-items-center rounded-full bg-sun', isActive && 'ring-2 ring-brand-600 ring-offset-1')}>
-                  <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="#0e0e10" strokeWidth="2.8" aria-hidden>
-                    <circle cx="12" cy="8.5" r="4.2" />
-                    <path d="M4.5 21v-1.8a5.5 5.5 0 0 1 5.5-5.5h4a5.5 5.5 0 0 1 5.5 5.5V21" strokeLinecap="round" />
-                  </svg>
+                <span className={cx('rounded-full', isActive && 'ring-2 ring-brand-600 ring-offset-1')}>
+                  <Avatar name={profile?.aka ?? ''} avatar={profile?.avatar} size="xs" />
                 </span>
                 โปรไฟล์
               </>
@@ -70,11 +67,15 @@ export function AppShell() {
 /** แถบม่วงด้านบน + avatar เหลือง + ชื่อ แบบหน้าโปรไฟล์ในรูป */
 export function ProfileHeader({
   name,
+  avatar,
+  onAvatarClick,
   subtitle,
   left,
   right,
 }: {
   name: string
+  avatar?: string | null
+  onAvatarClick?: () => void
   subtitle?: React.ReactNode
   left?: React.ReactNode
   right?: React.ReactNode
@@ -88,7 +89,7 @@ export function ProfileHeader({
         </div>
       </div>
       <div className="-mt-10 flex items-center gap-4 px-4 sm:-mt-12 sm:px-6">
-        <Avatar name={name} />
+        <Avatar name={name} avatar={avatar} onClick={onAvatarClick} />
         <div className="min-w-0 pt-8">
           <h1 className="truncate text-[28px] leading-tight font-bold sm:text-4xl">{name}</h1>
           {subtitle && <div className="mt-0.5 text-muted">{subtitle}</div>}

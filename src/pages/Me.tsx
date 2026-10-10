@@ -1,8 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { ProfileHeader, RoundButton } from '../components/AppShell'
+import { DarkPill, ProfileHeader, RoundButton } from '../components/AppShell'
+import { AVATARS, AvatarArt } from '../components/avatars'
 import { GearIcon, KeyIcon, LogoutIcon, ShieldIcon } from '../components/icons'
-import { Avatar, Card, EmptyState, ErrorText, Field, Input, Pill, Sheet, Spinner, Tabs } from '../components/ui'
+import { Avatar, Card, cx, EmptyState, ErrorText, Field, Input, Pill, Sheet, Spinner, Tabs } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { fmtDateTime } from '../lib/format'
 import { must, useProfiles, useSettings } from '../lib/queries'
@@ -13,12 +14,16 @@ import { PasswordSheet, ToggleActive } from './BorrowerDetail'
 export function Me() {
   const { profile, isSuper } = useAuth()
   const [pwOpen, setPwOpen] = useState(false)
+  const [avatarOpen, setAvatarOpen] = useState(false)
   const [tab, setTab] = useState<'admins' | 'audit'>('admins')
 
   return (
     <div>
       <ProfileHeader
         name={profile?.aka ?? ''}
+        avatar={profile?.avatar}
+        onAvatarClick={() => setAvatarOpen(true)}
+        right={<DarkPill onClick={() => setAvatarOpen(true)}>เปลี่ยนรูปโปรไฟล์</DarkPill>}
         subtitle={`@${profile?.username} · ${roleLabel[profile?.role ?? 'borrower']}`}
         left={
           <RoundButton label="ตั้งค่า" onClick={() => setPwOpen(true)}>
@@ -52,7 +57,54 @@ export function Me() {
       )}
 
       {pwOpen && <OwnPasswordSheet onClose={() => setPwOpen(false)} />}
+      {avatarOpen && <AvatarSheet current={profile?.avatar ?? 'person'} onClose={() => setAvatarOpen(false)} />}
     </div>
+  )
+}
+
+function AvatarSheet({ current, onClose }: { current: string; onClose: () => void }) {
+  const { reloadProfile } = useAuth()
+  const qc = useQueryClient()
+  const [picked, setPicked] = useState(current)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    setBusy(true)
+    const { error } = await supabase.rpc('set_my_avatar', { p_avatar: picked })
+    setBusy(false)
+    if (error) return setError(errorText(error))
+    await reloadProfile()
+    qc.invalidateQueries()
+    onClose()
+  }
+
+  return (
+    <Sheet open onClose={onClose} title="เลือกรูปโปรไฟล์">
+      <div className="space-y-4">
+        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+          {AVATARS.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => setPicked(a.id)}
+              aria-pressed={picked === a.id}
+              className={cx(
+                'flex flex-col items-center gap-1.5 rounded-2xl p-2 text-xs font-semibold',
+                picked === a.id ? 'bg-brand-50 text-brand-700 ring-2 ring-brand-600' : 'bg-canvas',
+              )}
+            >
+              <AvatarArt id={a.id} className="size-16" />
+              {a.label}
+            </button>
+          ))}
+        </div>
+        <ErrorText error={error} />
+        <Pill tone="brand" className="w-full" disabled={busy || picked === current} onClick={save}>
+          ใช้รูปนี้
+        </Pill>
+      </div>
+    </Sheet>
   )
 }
 
@@ -165,7 +217,7 @@ function AdminManager() {
           {admins.map((a) => (
             <Card key={a.id}>
               <div className="flex items-center gap-3">
-                <Avatar name={a.aka} size="sm" />
+                <Avatar name={a.aka} avatar={a.avatar} size="sm" />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{a.aka}</p>
                   <p className="text-sm text-muted">

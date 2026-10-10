@@ -40,8 +40,8 @@ export function draftFromLoan(l: Loan): LoanDraft {
     daily_interest: String(l.daily_interest),
     due_local: toLocalInput(l.due_at),
     hourly_penalty: String(l.hourly_penalty),
-    interest_mode: l.interest_mode,
-    daily_cutoff: l.daily_cutoff.slice(0, 5),
+    interest_mode: l.interest_mode ?? 'with_principal',
+    daily_cutoff: (l.daily_cutoff ?? '17:00').slice(0, 5),
     note: l.note ?? '',
   }
 }

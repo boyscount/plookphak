@@ -50,6 +50,7 @@ export function BorrowerDetail() {
     <div>
       <ProfileHeader
         name={person.aka}
+        avatar={person.avatar}
         subtitle={`@${person.username}${person.active ? '' : ' · ปิดใช้งาน'}`}
         left={
           <RoundButton label="กลับ" onClick={() => navigate(-1)}>

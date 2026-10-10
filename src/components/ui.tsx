@@ -1,3 +1,4 @@
+import { AvatarArt } from './avatars'
 import { useEffect, type ButtonHTMLAttributes, type InputHTMLAttributes, type ReactNode } from 'react'
 
 export function cx(...c: (string | false | null | undefined)[]) {
@@ -38,22 +39,35 @@ export function Pill({
   )
 }
 
-export function Avatar({ name, size = 'lg' }: { name: string; size?: 'sm' | 'lg' }) {
-  const big = size === 'lg'
-  return (
-    <div
-      className={cx(
-        'grid shrink-0 place-items-center rounded-full bg-sun',
-        big ? 'size-28 ring-4 ring-canvas sm:size-32' : 'size-11',
-      )}
-      aria-hidden
-    >
-      <svg viewBox="0 0 24 24" className={big ? 'size-16 sm:size-20' : 'size-6'} fill="none" stroke="#0e0e10" strokeWidth="2.6">
-        <circle cx="12" cy="8.5" r="4.2" />
-        <path d="M4.5 21v-1.8a5.5 5.5 0 0 1 5.5-5.5h4a5.5 5.5 0 0 1 5.5 5.5V21" strokeLinecap="round" />
-      </svg>
-      <span className="sr-only">{name}</span>
-    </div>
+export function Avatar({
+  name,
+  avatar,
+  size = 'lg',
+  onClick,
+}: {
+  name: string
+  avatar?: string | null
+  size?: 'xs' | 'sm' | 'lg'
+  onClick?: () => void
+}) {
+  const cls = cx(
+    'block shrink-0 rounded-full',
+    size === 'lg' && 'size-28 ring-4 ring-canvas sm:size-32',
+    size === 'sm' && 'size-11',
+    size === 'xs' && 'size-7',
+  )
+  const art = <AvatarArt id={avatar} className="size-full" />
+  return onClick ? (
+    <button type="button" onClick={onClick} className={cx(cls, 'relative active:scale-95')} aria-label={`เปลี่ยนรูปโปรไฟล์ของ ${name}`}>
+      {art}
+      <span className="absolute right-0 bottom-0 grid size-9 place-items-center rounded-full bg-brand-900 text-base text-white ring-4 ring-canvas">
+        ✎
+      </span>
+    </button>
+  ) : (
+    <span className={cls} title={name}>
+      {art}
+    </span>
   )
 }
 

@@ -6,6 +6,7 @@ export type Profile = {
   aka: string
   role: Role
   active: boolean
+  avatar: string | null
   note: string | null
   created_at: string
 }

@@ -44,7 +44,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: str
 export function BorrowerRow({ r }: { r: ReturnType<typeof useBorrowerRows>['rows'][number] }) {
   return (
     <Link to={`/borrowers/${r.person.id}`} className="flex items-center gap-3 rounded-2xl bg-white p-3.5 active:bg-pill">
-      <Avatar name={r.person.aka} size="sm" />
+      <Avatar name={r.person.aka} avatar={r.person.avatar} size="sm" />
       <span className="min-w-0 flex-1">
         <span className="block truncate font-semibold">
           {r.person.aka} {!r.person.active && <span className="text-xs text-muted">(ปิดใช้งาน)</span>}
@@ -80,7 +80,7 @@ export function Dashboard() {
 
   return (
     <div>
-      <ProfileHeader name={profile?.aka ?? ''} subtitle={roleLabel[profile?.role ?? 'admin']} />
+      <ProfileHeader name={profile?.aka ?? ''} avatar={profile?.avatar} subtitle={roleLabel[profile?.role ?? 'admin']} />
       <div className="mt-6 grid grid-cols-2 gap-3 px-4 sm:px-6 lg:grid-cols-4">
         <Stat label="ยอดค้างรับทั้งหมด" value={fmtBaht(outstanding)} />
         <Stat label="เงินต้นที่ยังไม่คืน" value={fmtBaht(lent)} />

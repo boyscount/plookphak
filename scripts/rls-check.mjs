@@ -25,6 +25,12 @@ ok((await somchai.from('profiles').select('*')).data.length === 1, 'ผู้ย
 ok(!!(await somchai.from('loans').update({ principal: 1 }).eq('id', mine[0].id).select()).data?.length === false, 'ผู้ยืมแก้ loan ไม่ได้')
 ok(!!(await somchai.rpc('create_account', { p_username: 'hack', p_password: 'xxxxxx', p_aka: 'h' })).error, 'ผู้ยืมสร้างบัญชีไม่ได้')
 
+// รูปโปรไฟล์: เปลี่ยนของตัวเองได้ แต่แก้ชื่อตัวเองไม่ได้
+ok(!(await somchai.rpc('set_my_avatar', { p_avatar: 'cat_finger' })).error, 'ผู้ยืมเปลี่ยนรูปโปรไฟล์ตัวเองได้')
+ok((await somchai.from('profiles').select('avatar').single()).data.avatar === 'cat_finger', 'รูปโปรไฟล์ถูกบันทึก')
+ok(!!(await somchai.rpc('set_my_avatar', { p_avatar: "x'; drop" })).error, 'ค่ารูปแปลก ๆ ถูกปฏิเสธ')
+ok(!(await somchai.from('profiles').update({ aka: 'แฮก' }).eq('username', 'somchai').select()).data?.length, 'ผู้ยืมแก้ชื่อตัวเองไม่ได้')
+
 // อัปสลิป
 const nidLoan = (await nid.from('loans').select('id')).data[0].id
 const upBad = await somchai.storage.from('slips').upload(`${nidLoan}/x.jpg`, new Blob(['x'], { type: 'image/jpeg' }))

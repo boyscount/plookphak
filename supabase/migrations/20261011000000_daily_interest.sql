@@ -197,3 +197,18 @@ begin
   end if;
   return new;
 end $$;
+
+-- ---------------------------------------------------------------------------
+-- รูปโปรไฟล์: เลือกจากชุดการ์ตูนในแอป (src/components/avatars.tsx)
+-- ---------------------------------------------------------------------------
+
+alter table public.profiles
+  add column avatar text not null default 'person' check (avatar ~ '^[a-z_]{1,32}$');
+
+-- ทุกคนเปลี่ยนรูปของตัวเองได้ (รวมผู้ยืม) โดยไม่ต้องเปิดสิทธิ์แก้คอลัมน์อื่น
+create function public.set_my_avatar(p_avatar text) returns void
+language sql security definer set search_path = '' as $$
+  update public.profiles set avatar = p_avatar where id = auth.uid()
+$$;
+revoke execute on function public.set_my_avatar from public, anon;
+grant execute on function public.set_my_avatar to authenticated;
