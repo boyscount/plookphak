@@ -10,13 +10,19 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:parity": "cross-env PARITY=1 vitest run parity",
-    "test:rls": "node --experimental-websocket scripts/rls-check.mjs"
+    "test:rls": "node --experimental-websocket scripts/rls-check.mjs",
+    "db:login": "supabase login",
+    "db:link": "supabase link --project-ref dsueyznupcttylnlevhd",
+    "db:mark-applied": "supabase migration repair --status applied 20261010000000 20261010000001 20261011000000 20261012000000",
+    "db:status": "supabase migration list",
+    "db:push": "supabase db push"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
     "@supabase/supabase-js": "^2.109.0",
     "@tanstack/react-query": "^5.104.1",
+    "jsqr": "^1.4.0",
     "qrcode": "^1.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",

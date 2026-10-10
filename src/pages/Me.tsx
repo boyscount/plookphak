@@ -7,7 +7,8 @@ import { GearIcon, KeyIcon, LogoutIcon, ShieldIcon } from '../components/icons'
 import { Avatar, Card, cx, EmptyState, ErrorText, Field, Input, Pill, Sheet, Spinner, Tabs } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { useTheme, type ThemePref } from '../lib/theme'
-import { isValidPromptPayId } from '../lib/promptpay'
+import { inspectThaiQr, isValidPromptPayId } from '../lib/promptpay'
+import { decodeQrImage } from '../lib/qrDecode'
 import { fmtDateTime } from '../lib/format'
 import { must, useProfiles, useSettings } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
@@ -90,32 +91,94 @@ function PromptPaySettings() {
   const { data } = useSettings()
   const [id, setId] = useState<string | null>(null)
   const [name, setName] = useState<string | null>(null)
+  const [scan, setScan] = useState<{ payload: string; kind: string; label: string } | null>(null)
+  const [busy, setBusy] = useState(false)
   const [msg, setMsg] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const idValue = id ?? data?.promptpay_id ?? ''
   const nameValue = name ?? data?.promptpay_name ?? ''
+  const saved = data?.promptpay_payload ? inspectThaiQr(data.promptpay_payload) : null
+
+  /** อ่านรูป QR ที่อัปโหลด (ในเครื่อง) */
+  async function onQrFile(file: File | undefined) {
+    if (!file) return
+    setError(null)
+    setMsg(null)
+    setBusy(true)
+    try {
+      const text = await decodeQrImage(file)
+      if (!text) return setError('อ่าน QR จากรูปไม่ได้ ลองครอปให้เห็น QR ชัด ๆ แล้วอัปใหม่')
+      const r = inspectThaiQr(text)
+      if (!r.ok) return setError(r.reason)
+      setScan(r)
+    } finally {
+      setBusy(false)
+    }
+  }
 
   async function save() {
     setError(null)
     setMsg(null)
-    if (idValue && !isValidPromptPayId(idValue)) return setError('เลขพร้อมเพย์ต้องเป็นเบอร์มือถือ 10 หลัก หรือเลขบัตร 13 หลัก')
-    const { error } = await supabase.rpc('set_promptpay', { p_id: idValue, p_name: nameValue })
+    if (scan) {
+      const { error } = await supabase.rpc('set_promptpay_qr', { p_payload: scan.payload, p_name: nameValue })
+      if (error) return setError(errorText(error))
+      setScan(null)
+      setMsg('บันทึก QR แล้ว ผู้ยืมจะเห็น QR นี้พร้อมยอดตอนอัปสลิป')
+    } else {
+      if (idValue && !isValidPromptPayId(idValue)) return setError('เลขพร้อมเพย์ต้องเป็นเบอร์มือถือ 10 หลัก หรือเลขบัตร 13 หลัก')
+      const { error } = await supabase.rpc('set_promptpay', { p_id: idValue, p_name: nameValue })
+      if (error) return setError(errorText(error))
+      setMsg(idValue ? 'บันทึกแล้ว ผู้ยืมจะเห็น QR ตอนอัปสลิป' : 'ปิด QR จากเบอร์แล้ว')
+    }
+    qc.invalidateQueries({ queryKey: ['settings'] })
+  }
+
+  async function removeQr() {
+    const { error } = await supabase.rpc('set_promptpay_qr', { p_payload: '', p_name: nameValue })
     if (error) return setError(errorText(error))
     qc.invalidateQueries({ queryKey: ['settings'] })
-    setMsg(idValue ? 'บันทึกแล้ว ผู้ยืมจะเห็น QR ตอนอัปสลิป' : 'ปิด QR พร้อมเพย์แล้ว')
+    setMsg('ลบ QR ที่อัปโหลดแล้ว')
   }
 
   return (
     <Card className="space-y-3">
       <h3 className="font-bold">💙 พร้อมเพย์สำหรับรับเงิน</h3>
       <p className="text-sm text-muted">ผู้ยืมจะเห็น QR พร้อมยอดที่ต้องจ่ายตอนอัปสลิป สแกนจ่ายได้ทันที</p>
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Input inputMode="numeric" placeholder="เบอร์มือถือ / เลขบัตร 13 หลัก" value={idValue} onChange={(e) => setId(e.target.value)} />
-        <Input placeholder="ชื่อบัญชี (ให้ผู้ยืมเห็น)" value={nameValue} onChange={(e) => setName(e.target.value)} />
-      </div>
+
+      {/* วิธีที่ 1: อัปรูป QR เดิมของบัญชี */}
+      <label className="block cursor-pointer rounded-2xl border-2 border-dashed border-brand-400 bg-brand-50 px-4 py-4 text-center text-brand-700">
+        <input type="file" accept="image/*" className="hidden" onChange={(e) => onQrFile(e.target.files?.[0])} />
+        <span className="block text-2xl">📷</span>
+        <span className="font-semibold">{busy ? 'กำลังอ่าน QR…' : 'อัปโหลดรูป QR พร้อมเพย์ของคุณ'}</span>
+        <span className="block text-xs">อ่านในเครื่องนี้ ไม่ได้ส่งรูปไปไหน · ใช้ได้ทั้ง QR ส่วนตัวและ QR ร้านค้า</span>
+      </label>
+      {scan && (
+        <p className="rounded-2xl bg-sky-100 px-4 py-3 text-sm text-sky-800">
+          อ่านได้: พร้อมเพย์ ({scan.kind}) <b className="tabular">{scan.label}</b> — กดบันทึกเพื่อใช้ QR นี้
+        </p>
+      )}
+      {!scan && saved?.ok && (
+        <div className="flex items-center justify-between gap-2 rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-ok">
+          <span>
+            ✓ ใช้ QR ที่อัปโหลด ({saved.kind} <span className="tabular">{saved.label}</span>)
+          </span>
+          <button type="button" className="shrink-0 underline" onClick={removeQr}>
+            ลบ
+          </button>
+        </div>
+      )}
+
+      {/* วิธีที่ 2: พิมพ์เบอร์/เลขบัตร (ใช้เมื่อไม่ได้อัปรูป QR) */}
+      <details className="text-sm" open={!saved?.ok && !scan}>
+        <summary className="cursor-pointer font-semibold text-muted">หรือพิมพ์เบอร์ / เลขบัตรเอง</summary>
+        <div className="mt-2">
+          <Input inputMode="numeric" placeholder="เบอร์มือถือ / เลขบัตร 13 หลัก" value={idValue} onChange={(e) => setId(e.target.value)} />
+        </div>
+      </details>
+      <Input placeholder="ชื่อบัญชี (ให้ผู้ยืมเห็น)" value={nameValue} onChange={(e) => setName(e.target.value)} />
       <ErrorText error={error} />
       {msg && <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-ok">✓ {msg}</p>}
-      <Pill tone="brand" className="w-full" onClick={save}>
+      <Pill tone="brand" className="w-full" disabled={busy} onClick={save}>
         บันทึก
       </Pill>
     </Card>

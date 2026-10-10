@@ -66,7 +66,12 @@ export function useSettings() {
   return useQuery({
     queryKey: ['settings'],
     queryFn: () =>
-      must<{ max_admins: number; promptpay_id: string | null; promptpay_name: string | null }>(
+      must<{
+        max_admins: number
+        promptpay_id: string | null
+        promptpay_name: string | null
+        promptpay_payload: string | null
+      }>(
         supabase.from('app_settings').select('*').single(),
       ),
   })

@@ -1,7 +1,7 @@
 // QR พร้อมเพย์ใส่ยอดให้: ผู้ยืมสแกนด้วยแอปธนาคารได้ทันที
 import { useEffect, useState } from 'react'
 import { fmtBaht } from '../lib/format'
-import { promptPayPayload } from '../lib/promptpay'
+import { inspectThaiQr, payloadWithAmount, promptPayPayload } from '../lib/promptpay'
 import { useSettings } from '../lib/queries'
 
 /** ซ่อนเลขกลาง: 081-xxx-5678 */
@@ -12,16 +12,20 @@ function maskId(id: string) {
 
 export function PromptPayQR({ amount }: { amount: number }) {
   const { data: settings } = useSettings()
-  const id = settings?.promptpay_id ?? null
+  // QR ที่ admin อัปโหลดมาก่อน ไม่มีค่อยใช้เบอร์/เลขบัตรที่พิมพ์ไว้
+  const uploaded = settings?.promptpay_payload ? inspectThaiQr(settings.promptpay_payload) : null
+  const source = uploaded?.ok ? uploaded.payload : null
+  const id = source ? null : (settings?.promptpay_id ?? null)
+  const shownId = uploaded?.ok ? uploaded.label : id
   const [svg, setSvg] = useState<string | null>(null)
   const [png, setPng] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!id || !(amount > 0)) return
+    if ((!id && !source) || !(amount > 0)) return
     let alive = true
     // โหลดตัวสร้าง QR เฉพาะตอนต้องใช้
     import('qrcode').then(async (QR) => {
-      const payload = promptPayPayload(id, amount)
+      const payload = source ? payloadWithAmount(source, amount) : promptPayPayload(id!, amount)
       const [s, p] = await Promise.all([
         QR.toString(payload, { type: 'svg', margin: 1, errorCorrectionLevel: 'M', color: { dark: '#0e0e10', light: '#ffffff' } }),
         QR.toDataURL(payload, { margin: 2, width: 720, errorCorrectionLevel: 'M' }),
@@ -34,9 +38,9 @@ export function PromptPayQR({ amount }: { amount: number }) {
     return () => {
       alive = false
     }
-  }, [id, amount])
+  }, [id, source, amount])
 
-  if (!id || !(amount > 0)) return null
+  if ((!id && !source) || !(amount > 0)) return null
 
   return (
     <div className="rounded-3xl bg-gradient-to-br from-[#0b3c68] to-[#1565a8] p-4 text-white">
@@ -52,7 +56,7 @@ export function PromptPayQR({ amount }: { amount: number }) {
         )}
       </div>
       <p className="mt-3 text-center text-sm">
-        {settings?.promptpay_name ?? 'ผู้ให้ยืม'} · <span className="tabular">{maskId(id)}</span>
+        {settings?.promptpay_name ?? 'ผู้ให้ยืม'} · <span className="tabular">{shownId ? maskId(shownId) : ''}</span>
       </p>
       <p className="mt-1 text-center text-xs text-white/75">สแกนด้วยแอปธนาคาร ยอดถูกใส่ไว้แล้ว จ่ายเสร็จแล้วอัปสลิปด้านล่าง</p>
       {png && (
