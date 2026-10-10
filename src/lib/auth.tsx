@@ -18,14 +18,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
+  const [profileLoading, setProfileLoading] = useState(false)
 
   async function loadProfile(s: Session | null) {
     if (!s) {
       setProfile(null)
       return
     }
+    setProfileLoading(true)
     const { data } = await supabase.from('profiles').select('*').eq('id', s.user.id).maybeSingle()
     setProfile(data as Profile | null)
+    setProfileLoading(false)
   }
 
   useEffect(() => {
@@ -38,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(s)
       if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         // ห้าม await ใน callback ของ supabase-js — เลื่อนออกไปก่อน
+        if (s) setProfileLoading(true)
         setTimeout(() => loadProfile(s), 0)
       }
     })
@@ -48,7 +52,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthState = {
     session,
     profile,
-    loading,
+    loading: loading || profileLoading,
     isStaff: role === 'admin' || role === 'super_admin',
     isSuper: role === 'super_admin',
     reloadProfile: () => loadProfile(session),

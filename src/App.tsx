@@ -20,11 +20,14 @@ function Routed() {
   const { session, profile, loading, isStaff } = useAuth()
   if (loading) return <Spinner />
   if (!session) return <Login />
-  if (!profile) return <Spinner />
-  if (!profile.active) {
+  if (!profile || !profile.active) {
     return (
       <div className="p-8 text-center">
-        <p>บัญชีนี้ถูกปิดใช้งาน</p>
+        <p>
+          {profile
+            ? 'บัญชีนี้ถูกปิดใช้งาน'
+            : 'บัญชีนี้ยังไม่มีโปรไฟล์ในระบบ — ต้องสร้างผ่านหน้าเพิ่มผู้ยืม/จัดการ admin หรือ bootstrap_super_admin เท่านั้น'}
+        </p>
         <button className="mt-4 underline" onClick={() => supabase.auth.signOut()}>
           ออกจากระบบ
         </button>

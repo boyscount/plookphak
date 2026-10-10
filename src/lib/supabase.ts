@@ -10,8 +10,11 @@ if (!url || !key) {
 export const supabase = createClient(url, key)
 
 /** ผู้ใช้ล็อกอินด้วย username — Supabase Auth ต้องการอีเมล จึงแปลงเป็นอีเมลภายใน */
-export const usernameToEmail = (username: string) =>
-  `${username.trim().toLowerCase()}@plookphak.local`
+export const usernameToEmail = (username: string) => {
+  const u = username.trim().toLowerCase()
+  // บัญชีที่สร้างจากหน้า Supabase dashboard ใช้อีเมลจริง ให้ล็อกอินด้วยอีเมลได้ด้วย
+  return u.includes('@') ? u : `${u}@plookphak.local`
+}
 
 export function errorText(e: unknown): string {
   if (!e) return 'เกิดข้อผิดพลาด'
