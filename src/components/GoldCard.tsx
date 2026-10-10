@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { cx, Logo } from './ui'
 
 /** เลขบัตรหลอกจาก id (4 หลักท้ายคงที่ต่อคน) */
@@ -31,27 +32,171 @@ function Contactless() {
   )
 }
 
+export type CardVariant = 'gold' | 'platinum' | 'silver' | 'black'
+
+const DEG = 180 / Math.PI
+const FRONT = -14 // มุมที่ keyframe 0% ของ gold-spin
+const BACK = 180 // มุมที่ keyframe 50%
+const SPIN_SECONDS = 14
+
+/** มุม rotateY ปัจจุบันจาก transform ที่คำนวณแล้ว (ระหว่าง animation) */
+function currentAngle(el: HTMLElement) {
+  const m = new DOMMatrixReadOnly(getComputedStyle(el).transform)
+  return Math.atan2(-m.m13, m.m11) * DEG
+}
+
+/** มุมด้านหน้า/หลังที่ใกล้ที่สุด */
+function nearestFace(angle: number) {
+  const f = 360 * Math.round((angle - FRONT) / 360) + FRONT
+  const b = 360 * Math.round((angle - BACK) / 360) + BACK
+  return Math.abs(angle - f) <= Math.abs(angle - b) ? { angle: f, back: false } : { angle: b, back: true }
+}
+
+type OrientationCtor = { requestPermission?: () => Promise<'granted' | 'denied'> }
+
 /**
- * บัตรทองหมุนช้า ๆ (3D) — หน้าบัตร: ชิป, เลขบัตร, ชื่อ / หลังบัตร: แถบแม่เหล็ก, ลายเซ็น
- * ผู้ใช้ที่ตั้งลดการเคลื่อนไหวไว้ จะเห็นบัตรเอียงนิ่ง ๆ
+ * บัตรสมาชิกหมุนช้า ๆ (3D) — หน้าบัตร: ชิป, เลขบัตร, ชื่อ / หลังบัตร: แถบแม่เหล็ก, ลายเซ็น
+ * ปัดซ้ายขวาเพื่อหมุนเอง · แตะเพื่อพลิก · เอียงมือถือ/เลื่อนเมาส์ บัตรเอียงตาม
+ * ผู้ใช้ที่ตั้งลดการเคลื่อนไหวไว้ จะเห็นบัตรเอียงนิ่ง ๆ (ยังปัด/แตะได้)
  */
 export function GoldCard({
   name,
   seed,
   tier = 'GOLD MEMBER',
+  variant = 'gold',
   caption,
   className,
 }: {
   name: string
   seed: string
   tier?: string
+  variant?: CardVariant
   caption?: string
   className?: string
 }) {
   const num = last4(seed || name || 'plookphak')
+  const spinRef = useRef<HTMLDivElement>(null)
+  const tiltRef = useRef<HTMLDivElement>(null)
+  const drag = useRef<{ x: number; t: number; angle: number; v: number; moved: number } | null>(null)
+  const resumeTimer = useRef<number | undefined>(undefined)
+  const raf = useRef<number | undefined>(undefined)
+
+  // เอียงตามมือถือ (Android ได้เลย, iOS ต้องขอสิทธิ์ตอนแตะครั้งแรก) และตามเมาส์บนคอม
+  const applyTilt = (rx: number, ry: number) => {
+    if (tiltRef.current) tiltRef.current.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`
+  }
+  useEffect(() => {
+    const onOrient = (e: DeviceOrientationEvent) => {
+      if (e.gamma == null || e.beta == null) return
+      const clamp = (v: number, m: number) => Math.max(-m, Math.min(m, v))
+      applyTilt(clamp((e.beta - 45) / 4, 10), clamp(e.gamma / 3, 14))
+    }
+    window.addEventListener('deviceorientation', onOrient)
+    return () => {
+      window.removeEventListener('deviceorientation', onOrient)
+      clearTimeout(resumeTimer.current)
+      cancelAnimationFrame(raf.current!)
+    }
+  }, [])
+
+  const setManual = (angle: number, transition = '') => {
+    const el = spinRef.current!
+    el.style.animation = 'none'
+    el.style.transition = transition
+    el.style.transform = `rotateY(${angle}deg) rotateX(6deg)`
+  }
+
+  /** ค่อย ๆ เข้าด้านที่ใกล้สุด แล้วกลับไปหมุนเองจากจุดนั้น */
+  const settle = (angle: number) => {
+    const face = nearestFace(angle)
+    setManual(face.angle, 'transform 700ms cubic-bezier(.2,.8,.2,1)')
+    clearTimeout(resumeTimer.current)
+    resumeTimer.current = window.setTimeout(() => {
+      const el = spinRef.current
+      if (!el) return
+      el.style.transition = ''
+      el.style.transform = ''
+      el.style.animation = ''
+      el.style.animationDelay = face.back ? `-${SPIN_SECONDS / 2}s` : '0s'
+    }, 3500)
+  }
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    const el = spinRef.current!
+    cancelAnimationFrame(raf.current!)
+    clearTimeout(resumeTimer.current)
+    const angle = currentAngle(el)
+    setManual(angle)
+    drag.current = { x: e.clientX, t: performance.now(), angle, v: 0, moved: 0 }
+    try {
+      el.setPointerCapture(e.pointerId)
+    } catch {
+      // pointer หายไปแล้ว — ไม่เป็นไร
+    }
+    // iOS: ขอสิทธิ์อ่านการเอียงมือถือจากการแตะของผู้ใช้
+    const ctor = window.DeviceOrientationEvent as unknown as OrientationCtor | undefined
+    ctor?.requestPermission?.().catch(() => {})
+  }
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current
+    if (!d) {
+      // เมาส์ลอยบนบัตร (คอม): เอียงตามตำแหน่ง
+      if (e.pointerType === 'mouse') {
+        const r = e.currentTarget.getBoundingClientRect()
+        applyTilt(((e.clientY - r.top) / r.height - 0.5) * -14, ((e.clientX - r.left) / r.width - 0.5) * 18)
+      }
+      return
+    }
+    const now = performance.now()
+    const dx = e.clientX - d.x
+    d.angle += dx * 0.6
+    // องศาต่อเฟรม (จำกัดไม่ให้ปัดแรงแล้วหมุนเป็นพัดลม)
+    d.v = Math.max(-25, Math.min(25, ((dx * 0.6) / Math.max(8, now - d.t)) * 16))
+    d.moved += Math.abs(dx)
+    d.x = e.clientX
+    d.t = now
+    setManual(d.angle)
+  }
+
+  const onPointerUp = () => {
+    const d = drag.current
+    drag.current = null
+    if (!d) return
+    if (d.moved < 6) {
+      // แตะ = พลิกไปอีกด้าน
+      const face = nearestFace(d.angle)
+      settle(face.angle + 180)
+      return
+    }
+    // ปล่อยแล้วหมุนต่อตามแรง แล้วค่อยเข้าด้าน
+    let { angle, v } = d
+    const step = () => {
+      angle += v
+      v *= 0.94
+      setManual(angle)
+      if (Math.abs(v) > 0.3) raf.current = requestAnimationFrame(step)
+      else settle(angle)
+    }
+    raf.current = requestAnimationFrame(step)
+  }
+
   return (
-    <div className={cx('gold-stage mx-auto w-full max-w-[340px]', className)}>
-      <div className="gold-spin relative aspect-[1.586] w-full">
+    <div
+      className={cx('gold-stage mx-auto w-full max-w-[340px]', `card-${variant}`, className)}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && !drag.current && applyTilt(0, 0)}
+    >
+      <div ref={tiltRef} className="gold-tilt">
+      <div
+        ref={spinRef}
+        className="gold-spin relative aspect-[1.586] w-full cursor-grab touch-pan-y select-none active:cursor-grabbing"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
+        role="img"
+        aria-label={`บัตรสมาชิก ${tier} ของ ${name}`}
+      >
         {/* หน้าบัตร */}
         <div className="gold-face gold-surface absolute inset-0 flex flex-col justify-between rounded-[18px] p-[6%]">
           <div className="gold-shine" />
@@ -103,6 +248,7 @@ export function GoldCard({
             <span className="gold-emboss text-[11px] font-bold">Plookphak</span>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )

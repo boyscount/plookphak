@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { ProfileHeader } from '../components/AppShell'
+import { BadgeRow } from '../components/Badges'
 import { GoldCard } from '../components/GoldCard'
+import { memberStats, TIER_LABEL, tierOf } from '../lib/tier'
 import { LoanCard, StateBadge } from '../components/LoanCard'
 import { PaymentList, SlipSheet } from '../components/Payments'
 import { EmptyState, NotebookArt, Pill, Row, Spinner, Tabs, Card } from '../components/ui'
@@ -31,12 +33,15 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
   const totalBalance = open.reduce((s, x) => s + x.s.balance, 0)
   const overdue = open.some((x) => x.s.state === 'overdue')
   const payments = all.flatMap((l) => l.payments)
+  const stats = memberStats(all, now)
+  const tier = tierOf(stats)
 
   return (
     <div>
       <ProfileHeader
         name={profile?.aka ?? ''}
         avatar={profile?.avatar}
+        cover={profile?.cover}
         subtitle={
           totalBalance > 0 ? (
             <span className={overdue ? 'font-semibold text-danger' : ''}>ค้างชำระ {fmtBaht(totalBalance)}</span>
@@ -49,9 +54,14 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
         <GoldCard
           name={profile?.aka ?? ''}
           seed={profile?.id ?? ''}
-          tier={overdue ? 'OVERDUE' : 'GOLD MEMBER'}
+          variant={tier}
+          tier={overdue ? `${TIER_LABEL[tier]} · OVERDUE` : `${TIER_LABEL[tier]} MEMBER`}
           caption={fmtBaht(totalBalance)}
         />
+        <p className="mt-3 text-center text-xs text-muted">ปัดบัตรเพื่อหมุน · แตะเพื่อพลิก</p>
+      </div>
+      <div className="mt-4 px-4 sm:px-6">
+        <BadgeRow stats={stats} />
       </div>
       <div className="mt-6 grid grid-cols-2 gap-3 px-4 sm:px-6">
         <Pill icon={<SlipIcon />} onClick={() => setPayOpen(true)} tone={overdue ? 'brand' : 'gray'}>

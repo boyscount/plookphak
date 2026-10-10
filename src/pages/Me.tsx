@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { DarkPill, ProfileHeader, RoundButton } from '../components/AppShell'
 import { AVATARS, AvatarArt } from '../components/avatars'
+import { COVERS, CoverSwatch } from '../components/Cover'
 import { GearIcon, KeyIcon, LogoutIcon, ShieldIcon } from '../components/icons'
 import { Avatar, Card, cx, EmptyState, ErrorText, Field, Input, Pill, Sheet, Spinner, Tabs } from '../components/ui'
 import { useAuth } from '../lib/auth'
@@ -22,8 +23,9 @@ export function Me() {
       <ProfileHeader
         name={profile?.aka ?? ''}
         avatar={profile?.avatar}
+        cover={profile?.cover}
         onAvatarClick={() => setAvatarOpen(true)}
-        right={<DarkPill onClick={() => setAvatarOpen(true)}>เปลี่ยนรูปโปรไฟล์</DarkPill>}
+        right={<DarkPill onClick={() => setAvatarOpen(true)}>แต่งโปรไฟล์</DarkPill>}
         subtitle={`@${profile?.username} · ${roleLabel[profile?.role ?? 'borrower']}`}
         left={
           <RoundButton label="ตั้งค่า" onClick={() => setPwOpen(true)}>
@@ -57,21 +59,27 @@ export function Me() {
       )}
 
       {pwOpen && <OwnPasswordSheet onClose={() => setPwOpen(false)} />}
-      {avatarOpen && <AvatarSheet current={profile?.avatar ?? 'person'} onClose={() => setAvatarOpen(false)} />}
+      {avatarOpen && (
+        <StyleSheet avatar={profile?.avatar ?? 'person'} cover={profile?.cover ?? 'violet'} onClose={() => setAvatarOpen(false)} />
+      )}
     </div>
   )
 }
 
-function AvatarSheet({ current, onClose }: { current: string; onClose: () => void }) {
+function StyleSheet({ avatar, cover, onClose }: { avatar: string; cover: string; onClose: () => void }) {
   const { reloadProfile } = useAuth()
   const qc = useQueryClient()
-  const [picked, setPicked] = useState(current)
+  const [picked, setPicked] = useState(avatar)
+  const [pickedCover, setPickedCover] = useState(cover)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function save() {
     setBusy(true)
-    const { error } = await supabase.rpc('set_my_avatar', { p_avatar: picked })
+    const calls = []
+    if (picked !== avatar) calls.push(supabase.rpc('set_my_avatar', { p_avatar: picked }))
+    if (pickedCover !== cover) calls.push(supabase.rpc('set_my_cover', { p_cover: pickedCover }))
+    const error = (await Promise.all(calls)).find((r) => r.error)?.error
     setBusy(false)
     if (error) return setError(errorText(error))
     await reloadProfile()
@@ -80,8 +88,9 @@ function AvatarSheet({ current, onClose }: { current: string; onClose: () => voi
   }
 
   return (
-    <Sheet open onClose={onClose} title="เลือกรูปโปรไฟล์">
+    <Sheet open onClose={onClose} title="แต่งโปรไฟล์">
       <div className="space-y-4">
+        <h3 className="font-bold">รูปโปรไฟล์</h3>
         <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
           {AVATARS.map((a) => (
             <button
@@ -99,9 +108,27 @@ function AvatarSheet({ current, onClose }: { current: string; onClose: () => voi
             </button>
           ))}
         </div>
+        <h3 className="pt-2 font-bold">ธีม cover</h3>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          {COVERS.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setPickedCover(c.id)}
+              aria-pressed={pickedCover === c.id}
+              className={cx(
+                'rounded-2xl p-1.5 text-left text-xs font-semibold',
+                pickedCover === c.id ? 'bg-brand-50 text-brand-700 ring-2 ring-brand-600' : 'bg-canvas',
+              )}
+            >
+              <CoverSwatch id={c.id} />
+              <span className="mt-1 block px-1">{c.label}</span>
+            </button>
+          ))}
+        </div>
         <ErrorText error={error} />
-        <Pill tone="brand" className="w-full" disabled={busy || picked === current} onClick={save}>
-          ใช้รูปนี้
+        <Pill tone="brand" className="w-full" disabled={busy || (picked === avatar && pickedCover === cover)} onClick={save}>
+          บันทึก
         </Pill>
       </div>
     </Sheet>

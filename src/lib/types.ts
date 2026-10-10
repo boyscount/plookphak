@@ -7,6 +7,7 @@ export type Profile = {
   role: Role
   active: boolean
   avatar: string | null
+  cover: string | null
   note: string | null
   created_at: string
 }

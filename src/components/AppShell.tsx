@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/auth'
 import { useNotifications } from '../lib/queries'
+import { Cover } from './Cover'
 import { Avatar, cx } from './ui'
 import { BellIcon, HomeIcon, PlusIcon, SearchIcon } from './icons'
 
@@ -68,6 +69,7 @@ export function AppShell() {
 export function ProfileHeader({
   name,
   avatar,
+  cover,
   onAvatarClick,
   subtitle,
   left,
@@ -75,6 +77,7 @@ export function ProfileHeader({
 }: {
   name: string
   avatar?: string | null
+  cover?: string | null
   onAvatarClick?: () => void
   subtitle?: React.ReactNode
   left?: React.ReactNode
@@ -82,12 +85,10 @@ export function ProfileHeader({
 }) {
   return (
     <header>
-      <div className="pt-safe h-36 bg-gradient-to-b from-[#5a2fb8] to-[#8b4cff] px-4 sm:h-44 sm:rounded-b-[2rem]">
-        <div className="flex items-center justify-between pt-2">
-          <div>{left}</div>
-          <div>{right}</div>
-        </div>
-      </div>
+      <Cover theme={cover} name={name}>
+        <div>{left}</div>
+        <div>{right}</div>
+      </Cover>
       <div className="-mt-10 flex items-center gap-4 px-4 sm:-mt-12 sm:px-6">
         <Avatar name={name} avatar={avatar} onClick={onAvatarClick} />
         <div className="min-w-0 pt-8">

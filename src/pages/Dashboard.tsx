@@ -123,12 +123,13 @@ export function Dashboard() {
 
   return (
     <div>
-      <ProfileHeader name={profile?.aka ?? ''} avatar={profile?.avatar} subtitle={roleLabel[profile?.role ?? 'admin']} />
+      <ProfileHeader name={profile?.aka ?? ''} avatar={profile?.avatar} cover={profile?.cover} subtitle={roleLabel[profile?.role ?? 'admin']} />
       <div className="mt-6 space-y-3 px-4 sm:px-6">
         <div className="grid items-center gap-5 lg:grid-cols-[minmax(0,340px)_1fr]">
         <GoldCard
           name={profile?.aka ?? ''}
           seed={profile?.id ?? ''}
+          variant={profile?.role === 'super_admin' ? 'black' : 'gold'}
           tier={profile?.role === 'super_admin' ? 'BLACK · SUPER ADMIN' : 'GOLD · ADMIN'}
           caption={fmtBaht(outstanding)}
         />

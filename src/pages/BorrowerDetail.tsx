@@ -12,6 +12,8 @@ import { must, useLoans, useProfile, useRefreshMoney } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import type { Loan } from '../lib/types'
 import { useQueryClient } from '@tanstack/react-query'
+import { BadgeRow, TierChip } from '../components/Badges'
+import { memberStats, tierOf } from '../lib/tier'
 
 export function BorrowerDetail() {
   const { id = '' } = useParams()
@@ -27,6 +29,7 @@ export function BorrowerDetail() {
   if (!person) return <Spinner />
   const all = loans ?? []
   const now = Date.now()
+  const stats = memberStats(loans ?? [], now)
   const open = all.filter((l) => {
     const s = loanSnapshot(l, l.payments, now)
     return s.balance > 0 || s.state === 'pending_review'
@@ -51,7 +54,14 @@ export function BorrowerDetail() {
       <ProfileHeader
         name={person.aka}
         avatar={person.avatar}
-        subtitle={`@${person.username}${person.active ? '' : ' · ปิดใช้งาน'}`}
+        cover={person.cover}
+        subtitle={
+          <span className="flex flex-wrap items-center gap-2">
+            @{person.username}
+            {!person.active && ' · ปิดใช้งาน'}
+            <TierChip tier={tierOf(stats)} />
+          </span>
+        }
         left={
           <RoundButton label="กลับ" onClick={() => navigate(-1)}>
             <BackIcon />
@@ -108,6 +118,7 @@ export function BorrowerDetail() {
         ) : tab === 'history' ? (
           payments.length ? <PaymentList payments={payments} /> : <EmptyState title="ยังไม่มีการชำระ" />
         ) : (
+          <>
           <Card>
             <Row label="AKA" value={person.aka} />
             <Row label="ชื่อผู้ใช้" value={person.username} />
@@ -116,6 +127,8 @@ export function BorrowerDetail() {
             {person.note && <p className="mt-2 text-muted">📝 {person.note}</p>}
             <ToggleActive id={person.id} active={person.active} />
           </Card>
+          <BadgeRow stats={stats} />
+          </>
         )}
       </div>
 

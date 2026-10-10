@@ -29,6 +29,8 @@ ok(!!(await somchai.rpc('create_account', { p_username: 'hack', p_password: 'xxx
 ok(!(await somchai.rpc('set_my_avatar', { p_avatar: 'cat_finger' })).error, 'ผู้ยืมเปลี่ยนรูปโปรไฟล์ตัวเองได้')
 ok((await somchai.from('profiles').select('avatar').single()).data.avatar === 'cat_finger', 'รูปโปรไฟล์ถูกบันทึก')
 ok(!!(await somchai.rpc('set_my_avatar', { p_avatar: "x'; drop" })).error, 'ค่ารูปแปลก ๆ ถูกปฏิเสธ')
+ok(!(await somchai.rpc('set_my_cover', { p_cover: 'noir_gold' })).error, 'ผู้ยืมเปลี่ยนธีม cover ตัวเองได้')
+ok((await somchai.from('profiles').select('cover').single()).data.cover === 'noir_gold', 'ธีม cover ถูกบันทึก')
 ok(!(await somchai.from('profiles').update({ aka: 'แฮก' }).eq('username', 'somchai').select()).data?.length, 'ผู้ยืมแก้ชื่อตัวเองไม่ได้')
 
 // อัปสลิป
