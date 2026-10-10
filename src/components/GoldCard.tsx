@@ -38,6 +38,7 @@ const DEG = 180 / Math.PI
 const FRONT = -14 // มุมที่ keyframe 0% ของ gold-spin
 const BACK = 180 // มุมที่ keyframe 50%
 const SPIN_SECONDS = 14
+const EDGE_LAYERS = [-1.6, -1.2, -0.8, -0.4, 0, 0.4, 0.8, 1.2, 1.6]
 
 /** มุม rotateY ปัจจุบันจาก transform ที่คำนวณแล้ว (ระหว่าง animation) */
 function currentAngle(el: HTMLElement) {
@@ -77,6 +78,7 @@ export function GoldCard({
   const num = last4(seed || name || 'plookphak')
   const spinRef = useRef<HTMLDivElement>(null)
   const tiltRef = useRef<HTMLDivElement>(null)
+  const stageRef = useRef<HTMLDivElement>(null)
   const drag = useRef<{ x: number; t: number; angle: number; v: number; moved: number } | null>(null)
   const resumeTimer = useRef<number | undefined>(undefined)
   const raf = useRef<number | undefined>(undefined)
@@ -92,7 +94,23 @@ export function GoldCard({
       applyTilt(clamp((e.beta - 45) / 4, 10), clamp(e.gamma / 3, 14))
     }
     window.addEventListener('deviceorientation', onOrient)
+
+    // แสงสะท้อนและเงาบนพื้นตามมุมบัตรจริง (ทั้งตอนหมุนเองและตอนปัด)
+    let light = 0
+    const loop = () => {
+      const el = spinRef.current
+      const stage = stageRef.current
+      if (el && stage) {
+        const a = currentAngle(el) / DEG
+        stage.style.setProperty('--card-cos', Math.abs(Math.cos(a)).toFixed(3))
+        stage.style.setProperty('--card-glare', `${(50 - Math.sin(a) * 90).toFixed(1)}%`)
+      }
+      light = requestAnimationFrame(loop)
+    }
+    light = requestAnimationFrame(loop)
+
     return () => {
+      cancelAnimationFrame(light)
       window.removeEventListener('deviceorientation', onOrient)
       clearTimeout(resumeTimer.current)
       cancelAnimationFrame(raf.current!)
@@ -183,7 +201,8 @@ export function GoldCard({
 
   return (
     <div
-      className={cx('gold-stage mx-auto w-full max-w-[340px]', `card-${variant}`, className)}
+      ref={stageRef}
+      className={cx('gold-stage relative mx-auto w-full max-w-[340px] pb-6', `card-${variant}`, className)}
       onPointerLeave={(e) => e.pointerType === 'mouse' && !drag.current && applyTilt(0, 0)}
     >
       <div ref={tiltRef} className="gold-tilt">
@@ -197,8 +216,12 @@ export function GoldCard({
         role="img"
         aria-label={`บัตรสมาชิก ${tier} ของ ${name}`}
       >
+        {/* ความหนาของบัตร: แผ่นบาง ๆ ซ้อนกัน เห็นเป็นขอบตอนบัตรตะแคง */}
+        {EDGE_LAYERS.map((z) => (
+          <div key={z} className="gold-edge absolute inset-0 rounded-[18px]" style={{ transform: `translateZ(${z}px)` }} />
+        ))}
         {/* หน้าบัตร */}
-        <div className="gold-face gold-surface absolute inset-0 flex flex-col justify-between rounded-[18px] p-[6%]">
+        <div className="gold-face gold-front gold-surface absolute inset-0 flex flex-col justify-between rounded-[18px] p-[6%]">
           <div className="gold-shine" />
           <div className="relative flex items-start justify-between">
             <span className="flex items-center gap-1.5">
@@ -250,6 +273,8 @@ export function GoldCard({
         </div>
       </div>
       </div>
+      {/* เงาบนพื้น หดเมื่อบัตรตะแคง */}
+      <div className="gold-floor" aria-hidden />
     </div>
   )
 }

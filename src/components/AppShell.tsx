@@ -89,9 +89,10 @@ export function ProfileHeader({
         <div>{left}</div>
         <div>{right}</div>
       </Cover>
-      <div className="-mt-10 flex items-center gap-4 px-4 sm:-mt-12 sm:px-6">
+      {/* z-10: ให้รูปโปรไฟล์ลอยอยู่เหนือ cover ไม่ถูก cover ทับ */}
+      <div className="relative z-10 -mt-12 flex items-end gap-4 px-4 sm:-mt-14 sm:px-6">
         <Avatar name={name} avatar={avatar} onClick={onAvatarClick} />
-        <div className="min-w-0 pt-8">
+        <div className="min-w-0 pb-2">
           <h1 className="truncate text-[28px] leading-tight font-bold sm:text-4xl">{name}</h1>
           {subtitle && <div className="mt-0.5 text-muted">{subtitle}</div>}
         </div>

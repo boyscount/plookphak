@@ -52,7 +52,7 @@ export function Avatar({
 }) {
   const cls = cx(
     'block shrink-0 rounded-full',
-    size === 'lg' && 'size-28 ring-4 ring-canvas sm:size-32',
+    size === 'lg' && 'avatar-3d size-28 ring-4 ring-canvas sm:size-32',
     size === 'sm' && 'size-11',
     size === 'xs' && 'size-7',
   )
