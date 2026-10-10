@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { Spinner } from './components/ui'
@@ -12,6 +13,9 @@ import { Browse, Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
 import { Me } from './pages/Me'
 import { NewBorrower } from './pages/NewBorrower'
+
+// บ้านแมวมี three.js (~ครึ่ง MB) — โหลดเมื่อเปิดหน้านี้เท่านั้น
+const CatHome = lazy(() => import('./pages/CatHome'))
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 10_000, refetchOnWindowFocus: true, retry: 1 } },
@@ -42,8 +46,26 @@ function Routed() {
         <Route path="browse" element={isStaff ? <Browse /> : <BorrowerHome initialTab="history" />} />
         <Route path="activity" element={<Activity />} />
         <Route path="me" element={<Me />} />
+        <Route
+          path="cat"
+          element={
+            <Suspense fallback={<Spinner />}>
+              <CatHome />
+            </Suspense>
+          }
+        />
         {isStaff && <Route path="borrowers/new" element={<NewBorrower />} />}
         {isStaff && <Route path="borrowers/:id" element={<BorrowerDetail />} />}
+        {isStaff && (
+          <Route
+            path="borrowers/:id/cat"
+            element={
+              <Suspense fallback={<Spinner />}>
+                <CatHome />
+              </Suspense>
+            }
+          />
+        )}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

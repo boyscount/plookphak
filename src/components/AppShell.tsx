@@ -3,7 +3,7 @@ import { useAuth } from '../lib/auth'
 import { useNotifications } from '../lib/queries'
 import { Cover } from './Cover'
 import { Avatar, cx } from './ui'
-import { BellIcon, HomeIcon, PlusIcon, SearchIcon } from './icons'
+import { BellIcon, CatIcon, HomeIcon, PlusIcon, SearchIcon } from './icons'
 
 /** เมนูล่าง 5 ช่องแบบในรูปต้นแบบ */
 export function AppShell() {
@@ -32,7 +32,7 @@ export function AppShell() {
       <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-xl items-start px-2">
           {item('/', 'หน้าแรก', <HomeIcon />)}
-          {item('/browse', isStaff ? 'เรียกดู' : 'ประวัติ', <SearchIcon />)}
+          {isStaff ? item('/browse', 'เรียกดู', <SearchIcon />) : item('/cat', 'บ้านแมว', <CatIcon />)}
           <div className="flex flex-1 justify-center pt-2">
             <button
               onClick={() => navigate(isStaff ? '/borrowers/new' : '/?pay=1')}

@@ -449,3 +449,67 @@ body {
     animation: none;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   บ้านแมว
+   --------------------------------------------------------------------------- */
+.cat-bubble {
+  max-width: 200px;
+  padding: 6px 12px;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #1f1530;
+  font: 600 12px/1.35 'Prompt', sans-serif;
+  text-align: center;
+  box-shadow: 0 6px 16px -6px rgb(60 20 120 / 0.35);
+  pointer-events: none;
+  white-space: normal;
+  width: max-content;
+}
+.cat-bubble::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 2px;
+}
+.cat-hearts {
+  position: relative;
+  width: 60px;
+  height: 20px;
+  pointer-events: none;
+}
+.cat-hearts span {
+  position: absolute;
+  font-size: 20px;
+  opacity: 0;
+  animation: heart-rise 1.6s ease-out forwards;
+}
+.cat-hearts span:nth-child(1) {
+  left: 0;
+}
+.cat-hearts span:nth-child(2) {
+  left: 22px;
+  animation-delay: 0.15s;
+}
+.cat-hearts span:nth-child(3) {
+  left: 42px;
+  animation-delay: 0.3s;
+}
+@keyframes heart-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-60px) scale(1.2);
+  }
+}

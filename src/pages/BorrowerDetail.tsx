@@ -76,6 +76,9 @@ export function BorrowerDetail() {
         <Pill icon={<KeyIcon />} onClick={() => setResetPw(true)}>
           รีเซ็ตรหัสผ่าน
         </Pill>
+        <Pill className="col-span-2" onClick={() => navigate(`/borrowers/${person.id}/cat`)}>
+          🏠 ดูบ้านแมวของ {person.aka}
+        </Pill>
       </div>
 
       <div className="mt-6 px-4 sm:px-6">

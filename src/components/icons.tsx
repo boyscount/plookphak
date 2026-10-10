@@ -87,3 +87,9 @@ export const LogoutIcon = ({ className = 'size-6' }: P) => (
     <path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h10" />
   </svg>
 )
+export const CatIcon = ({ className = 'size-7' }: P) => (
+  <svg viewBox="0 0 24 24" className={className} {...base}>
+    <path d="M4 20V9l3-5 3 4h4l3-4 3 5v11z" />
+    <path d="M9 13h.01M15 13h.01M10.5 16.5q1.5 1 3 0" />
+  </svg>
+)
