@@ -4,12 +4,13 @@ import { ProfileHeader } from '../components/AppShell'
 import { GoldCard } from '../components/GoldCard'
 import { StateBadge } from '../components/LoanCard'
 import { PaymentList } from '../components/Payments'
-import { Avatar, Card, EmptyState, Input, Pill, Spinner, Tabs } from '../components/ui'
+import { AvatarArt, avatarById } from '../components/avatars'
+import { Avatar, Card, cx, EmptyState, Input, Pill, Spinner, Tabs } from '../components/ui'
 import { PlusIcon } from '../components/icons'
 import { CountUpBaht, MONEY_COLORS, ProgressRing, RankBars, StackedBar } from '../components/charts'
 import { useAuth } from '../lib/auth'
 import { fmtBaht, fmtDateTime } from '../lib/format'
-import { loanSnapshot, type LoanState } from '../lib/loanMath'
+import { dailyPlan, loanSnapshot, type LoanState } from '../lib/loanMath'
 import { useLoans, useNow, useProfiles } from '../lib/queries'
 import { roleLabel, type Loan, type Profile } from '../lib/types'
 
@@ -24,11 +25,33 @@ function useBorrowerRows() {
     const snaps = mine.map((l) => loanSnapshot(l, l.payments, now))
     const balance = snaps.reduce((s, x) => s + x.balance, 0)
     const worst = snaps.map((s) => s.state).sort((a, b) => severity[a] - severity[b])[0] as LoanState | undefined
-    const nextDue = mine
-      .filter((_, i) => snaps[i].balance > 0)
-      .map((l) => l.due_at)
+    const open = mine.filter((_, i) => snaps[i].balance > 0)
+    const openSnaps = snaps.filter((x) => x.balance > 0)
+    // รอบถัดไป: แบบรายวันคือตัดรอบดอกถัดไป แบบพร้อมต้นคือวันครบชำระ
+    const nextDue = open
+      .map((l, i) => (openSnaps[i].daily && openSnaps[i].nextDue ? new Date(openSnaps[i].nextDue!.at).toISOString() : l.due_at))
       .sort()[0]
-    return { person: p, loans: mine, balance, worst, nextDue, pending: mine.flatMap((l) => l.payments).filter((x) => x.status === 'pending').length }
+    const modes = [...new Set((open.length ? open : mine).map((l) => l.interest_mode ?? 'with_principal'))]
+    const total = openSnaps.reduce((s, x) => s + x.total, 0)
+    const paidRatio = total > 0 ? (total - openSnaps.reduce((s, x) => s + x.balance, 0)) / total : mine.length ? 1 : 0
+    // แบบรายวัน: นับวันที่ค้างดอก · แบบพร้อมต้น: เลยกำหนดหรือยัง
+    const overdueDays = open.reduce(
+      (n, l, i) => n + (openSnaps[i].daily ? dailyPlan(l, l.payments, now).days.filter((d) => d.overdue).length : 0),
+      0,
+    )
+    const principalLate = openSnaps.some((x) => !x.daily && (x.state === 'overdue' || x.state === 'grace'))
+    return {
+      person: p,
+      loans: mine,
+      balance,
+      worst,
+      nextDue,
+      modes,
+      paidRatio,
+      overdueDays,
+      principalLate,
+      pending: mine.flatMap((l) => l.payments).filter((x) => x.status === 'pending').length,
+    }
   })
   rows.sort((a, b) => severity[a.worst ?? 'paid'] - severity[b.worst ?? 'paid'] || b.balance - a.balance)
   return { rows, loans: loans ?? [], isLoading: l1 || l2, now }
@@ -65,11 +88,12 @@ export function BorrowerRow({ r }: { r: ReturnType<typeof useBorrowerRows>['rows
           @{r.person.username}
           {r.nextDue && ` · ครบ ${fmtDateTime(r.nextDue)}`}
         </span>
-        {r.worst && (
-          <span className="mt-1 block">
-            <StateBadge state={r.worst} />
-          </span>
-        )}
+        <span className="mt-1 flex flex-wrap gap-1">
+          {r.modes.map((m) => (
+            <ModeChip key={m} mode={m} />
+          ))}
+          {r.worst && <StateBadge state={r.worst} />}
+        </span>
       </span>
     </Link>
   )
@@ -203,13 +227,143 @@ export function Dashboard() {
   )
 }
 
-function BorrowerList({ rows, empty }: { rows: ReturnType<typeof useBorrowerRows>['rows']; empty: string }) {
-  if (!rows.length) return <EmptyState title={empty} subtitle="เงียบจังเลย…เงียบไปแล้ว…" />
+type Row = ReturnType<typeof useBorrowerRows>['rows'][number]
+type View = 'list' | 'grid'
+const VIEW_KEY = 'plookphak:borrower-view'
+
+/** มุมมองที่เลือกไว้ จำเฉพาะเครื่องนี้ */
+function readView(): View {
+  try {
+    return localStorage.getItem(VIEW_KEY) === 'grid' ? 'grid' : 'list'
+  } catch {
+    return 'list'
+  }
+}
+
+export function ModeChip({ mode, solid }: { mode: string; solid?: boolean }) {
+  const daily = mode === 'daily'
   return (
-    <div className="grid gap-2 md:grid-cols-2">
-      {rows.map((r) => (
-        <BorrowerRow key={r.person.id} r={r} />
-      ))}
+    <span
+      className={cx(
+        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap',
+        solid
+          ? daily
+            ? 'bg-brand-600 text-white'
+            : 'bg-[#e9b949] text-[#3d2c08]'
+          : daily
+            ? 'bg-brand-50 text-brand-700'
+            : 'bg-amber-100 text-amber-800',
+      )}
+    >
+      {daily ? '📅 รายวัน' : '💰 พร้อมต้น'}
+    </span>
+  )
+}
+
+const shortDate = new Intl.DateTimeFormat('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short' })
+
+/** การ์ดแบบชั้นหนังสือ: ปกเป็นรูปแมว ป้ายรูปแบบดอก ป้ายค้าง แถบความคืบหน้า */
+function BorrowerTile({ r }: { r: Row }) {
+  const a = avatarById(r.person.avatar)
+  const late = r.overdueDays > 0 || r.principalLate
+  const pct = Math.round(r.paidRatio * 100)
+  return (
+    <Link to={`/borrowers/${r.person.id}`} className="group block min-w-0 active:scale-[.98]">
+      <div
+        className="relative aspect-[3/4] overflow-hidden rounded-2xl shadow-[0_10px_24px_-14px_rgb(40_15_90/.6)]"
+        style={{ background: `radial-gradient(120% 80% at 50% 30%, #ffffff66, transparent 60%), ${a.bg}` }}
+      >
+        <AvatarArt id={r.person.avatar} className="absolute inset-x-[12%] top-[8%] w-[76%] drop-shadow-lg transition group-hover:scale-105" />
+        <div className="absolute top-2 left-2 flex flex-col items-start gap-1">
+          {r.modes.map((m) => (
+            <ModeChip key={m} mode={m} solid />
+          ))}
+        </div>
+        {r.pending > 0 && (
+          <span className="absolute top-2 right-2 rounded-full bg-sky-500 px-2 py-0.5 text-[11px] font-bold text-white">📩 {r.pending}</span>
+        )}
+        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-3 pt-10 pb-2.5 text-white">
+          <div className="flex items-end justify-between gap-2">
+            <span className="tabular text-2xl leading-none font-bold">
+              {pct}
+              <span className="ml-0.5 text-xs font-semibold opacity-85">% จ่ายแล้ว</span>
+            </span>
+            {late ? (
+              <span className="shrink-0 rounded-lg bg-[#ff8a1f] px-2 py-0.5 text-xs font-bold">
+                {r.overdueDays > 0 ? `ค้าง ${r.overdueDays} วัน` : 'เลยกำหนด'}
+              </span>
+            ) : r.balance <= 0 ? (
+              <span className="shrink-0 rounded-lg bg-ok px-2 py-0.5 text-xs font-bold">จ่ายครบ</span>
+            ) : null}
+          </div>
+          <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/30">
+            <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 line-clamp-2 leading-snug font-semibold">{r.person.aka}</p>
+      <p className="text-sm">
+        <span className="tabular font-semibold">{fmtBaht(r.balance)}</span>
+        {r.nextDue && r.balance > 0 && (
+          <span className={late ? 'text-danger' : 'text-[#e0457b]'}> · ถัดไป {shortDate.format(new Date(r.nextDue))}</span>
+        )}
+      </p>
+    </Link>
+  )
+}
+
+const VIEWS: { id: View; icon: string; label: string }[] = [
+  { id: 'list', icon: '☰', label: 'แบบรายการ' },
+  { id: 'grid', icon: '▦', label: 'แบบการ์ด' },
+]
+
+function BorrowerList({ rows, empty }: { rows: Row[]; empty: string }) {
+  const [view, setView] = useState<View>(readView)
+  const pick = (v: View) => {
+    setView(v)
+    try {
+      localStorage.setItem(VIEW_KEY, v)
+    } catch {
+      // จำไม่ได้ก็ใช้ได้แค่รอบนี้
+    }
+  }
+  if (!rows.length) return <EmptyState title={empty} subtitle="เงียบจังเลย…เงียบไปแล้ว…" />
+  const daily = rows.filter((r) => r.modes.includes('daily')).length
+  return (
+    <div>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <p className="text-sm text-muted">
+          {rows.length} คน · 📅 รายวัน {daily} · 💰 พร้อมต้น {rows.length - daily}
+        </p>
+        <div className="flex shrink-0 gap-1 rounded-full bg-pill p-1" role="radiogroup" aria-label="มุมมอง">
+          {VIEWS.map((v) => (
+            <button
+              key={v.id}
+              type="button"
+              role="radio"
+              aria-checked={view === v.id}
+              aria-label={v.label}
+              onClick={() => pick(v.id)}
+              className={cx('grid size-9 place-items-center rounded-full text-lg', view === v.id ? 'bg-surface text-brand-700 shadow' : 'text-muted')}
+            >
+              {v.icon}
+            </button>
+          ))}
+        </div>
+      </div>
+      {view === 'grid' ? (
+        <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 lg:grid-cols-4">
+          {rows.map((r) => (
+            <BorrowerTile key={r.person.id} r={r} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid gap-2 md:grid-cols-2">
+          {rows.map((r) => (
+            <BorrowerRow key={r.person.id} r={r} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
