@@ -1,4 +1,4 @@
-// ตึกแมวของ admin: ทุกคนในตึกเดียว ชั้นที่ต้องตามเรียงไว้ล่างสุด
+// เรือนน้ำชาของ admin: ทุกคนในเรือนเดียว ชั้นที่ต้องตามเรียงไว้ล่างสุด
 import { lazy, Suspense, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RoundButton } from '../components/AppShell'
@@ -14,6 +14,7 @@ import { useLoans, useNow, useProfiles } from '../lib/queries'
 
 const Building = lazy(() => import('../components/cat3d/Building'))
 const FLOOR_H = 1.7 // ต้องตรงกับ Building.tsx
+const BASE = 0.6 // ความสูงชานเหนือน้ำ ต้องตรงกับ Building.tsx
 
 const MOOD_RANK = { sad: 0, hungry: 1, ok: 2, happy: 3 }
 
@@ -48,6 +49,7 @@ export function CatBuilding() {
     fullness: r.stats.fullness,
     balance: fmtBaht(r.balance),
     overdue: r.stats.lateHours >= 1,
+    closed: r.balance <= 0,
     pendingSlips: r.pending,
   }))
   const outstanding = rows.reduce((s, r) => s + r.balance, 0)
@@ -57,7 +59,7 @@ export function CatBuilding() {
     .reduce((s, p) => s + Number(p.amount), 0)
   const rate = collected + outstanding > 0 ? collected / (collected + outstanding) : 0
   const sel = rows.find((r) => r.person.id === selected)
-  const maxFloor = floors.length // ชั้นสุดท้าย = ดาดฟ้า
+  const maxFloor = floors.length // ชั้นสุดท้าย = หลังคา
   const clampFloor = (i: number) => Math.max(0, Math.min(maxFloor, i))
   const goFloor = (i: number) => setFocus(clampFloor(i))
   const stepFloor = (d: number) => setFocus((f) => clampFloor(f + d))
@@ -74,7 +76,7 @@ export function CatBuilding() {
           <BackIcon />
         </RoundButton>
         <div>
-          <h1 className="text-2xl font-bold">🏢 ตึกแมว</h1>
+          <h1 className="text-2xl font-bold">🏯 เรือนน้ำชา</h1>
           <p className="text-sm text-muted">
             {floors.length} ห้อง · เลยกำหนด {floors.filter((f) => f.overdue).length} ห้อง
           </p>
@@ -99,20 +101,21 @@ export function CatBuilding() {
           </button>
         ))}
         <button type="button" onClick={() => goFloor(maxFloor)} className="shrink-0 rounded-full bg-surface px-3 py-1 text-sm font-semibold">
-          🌃 ดาดฟ้า
+          🏯 หลังคา
         </button>
       </div>
 
       {/* ตัวตึก */}
-      <div className="relative mt-3 h-[62dvh] min-h-[360px] overflow-hidden rounded-3xl bg-[#1a1240]" style={{ touchAction: 'none' }}>
+      <div className="relative mt-3 h-[62dvh] min-h-[360px] overflow-hidden rounded-3xl bg-[#cfe6e3]" style={{ touchAction: 'none' }}>
         {floors.length === 0 ? (
-          <div className="grid h-full place-items-center text-white/80">ยังไม่มีผู้ยืม ตึกยังว่าง 🏗️</div>
+          <div className="grid h-full place-items-center text-[#2f3a44]">ยังไม่มีผู้ยืม เรือนยังว่าง 🏯</div>
         ) : (
-          <Suspense fallback={<div className="grid h-full place-items-center text-white/70">กำลังสร้างตึก… 🏗️</div>}>
+          <Suspense fallback={<div className="grid h-full place-items-center text-[#2f3a44]">กำลังพายเรือไปที่เรือน… ⛵</div>}>
             <Building
               floors={floors}
               selectedId={selected}
-              focusY={focus * FLOOR_H + 0.6}
+              focusY={BASE + focus * FLOOR_H + 0.6}
+              onBoat={() => navigate('/?tab=slips')}
               onPick={pick}
               total={fmtBaht(outstanding)}
               rate={rate}
@@ -124,13 +127,13 @@ export function CatBuilding() {
             ▲
           </button>
           <span className="tabular rounded-full bg-black/40 py-1 text-center text-xs font-semibold text-white">
-            {focus >= maxFloor ? 'ดาดฟ้า' : `ชั้น ${focus + 1}`}
+            {focus >= maxFloor ? 'หลังคา' : `ชั้น ${focus + 1}`}
           </span>
           <button type="button" onClick={() => stepFloor(-1)} className="grid size-11 place-items-center rounded-full bg-white/90 text-lg font-bold text-[#1a1240]" aria-label="ลงชั้นล่าง">
             ▼
           </button>
         </div>
-        <p className="pointer-events-none absolute bottom-2 left-0 right-0 text-center text-[11px] text-white/60">
+        <p className="pointer-events-none absolute bottom-2 left-0 right-0 text-center text-[11px] text-[#2f3a44]/70 [text-shadow:0_1px_2px_rgb(255_255_255/.6)]">
           ลากเพื่อหมุน · แตะห้องเพื่อดูรายละเอียด
         </p>
       </div>

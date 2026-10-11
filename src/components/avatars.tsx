@@ -338,7 +338,7 @@ export function AvatarArt({ id, className }: { id?: string | null; className?: s
   )
 }
 
-/** สีตัวแมว 3D ในบ้านแมว/ตึกแมว ตามรูปโปรไฟล์ที่เลือก */
+/** สีตัวแมว 3D ในบ้านแมว/เรือนน้ำชา ตามรูปโปรไฟล์ที่เลือก */
 const CAT_COLOR: Record<string, string> = {
   cat_finger: '#c9c3d6',
   cat_side_eye: '#ffb347',

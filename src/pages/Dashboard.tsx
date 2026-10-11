@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { ProfileHeader } from '../components/AppShell'
 import { RequestReviewList } from '../components/BorrowerTools'
 import { GoldCard } from '../components/GoldCard'
@@ -106,7 +106,13 @@ export function Dashboard() {
   const { profile } = useAuth()
   const navigate = useNavigate()
   const { rows, loans, isLoading, now } = useBorrowerRows()
-  const [tab, setTab] = useState<'attention' | 'slips' | 'requests' | 'all'>('attention')
+  type DashTab = 'attention' | 'slips' | 'requests' | 'all'
+  // เปิดแท็บตามลิงก์ได้ เช่น /?tab=slips (จากเรือที่เทียบท่าในเรือนน้ำชา)
+  const [params] = useSearchParams()
+  const asked = params.get('tab')
+  const [tab, setTab] = useState<DashTab>(
+    asked === 'slips' || asked === 'requests' || asked === 'all' ? asked : 'attention',
+  )
   const { data: requests } = useLoanRequests()
   const pendingRequests = requests?.filter((r) => r.status === 'pending').length ?? 0
 
@@ -201,7 +207,7 @@ export function Dashboard() {
         )}
 
         <div className="grid grid-cols-2 gap-3">
-          <Pill onClick={() => navigate('/building')}>🏢 ตึกแมว</Pill>
+          <Pill onClick={() => navigate('/building')}>🏯 เรือนน้ำชา</Pill>
           <Pill icon={<PlusIcon className="size-6" />} onClick={() => navigate('/borrowers/new')}>
             เพิ่มผู้ยืม
           </Pill>
