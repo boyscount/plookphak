@@ -768,3 +768,31 @@ input::-webkit-date-and-time-value {
     display: none;
   }
 }
+
+/* ฉากหน้า login */
+.login-layer {
+  transition: transform 400ms ease-out;
+}
+.lake-shimmer {
+  animation: lake-shimmer 4s ease-in-out infinite;
+}
+@keyframes lake-shimmer {
+  50% {
+    opacity: 0.3;
+    transform: translateX(6px);
+  }
+}
+.lantern-glow {
+  animation: lantern-glow 2.6s ease-in-out infinite;
+}
+@keyframes lantern-glow {
+  50% {
+    opacity: 0.7;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lake-shimmer,
+  .lantern-glow {
+    animation: none;
+  }
+}
