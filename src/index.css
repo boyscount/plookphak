@@ -127,13 +127,6 @@ body {
   scrollbar-width: none;
 }
 
-@keyframes confetti-fall {
-  to {
-    transform: translateY(120vh) rotate(540deg);
-    opacity: 0.2;
-  }
-}
-
 @keyframes rise-in {
   from {
     opacity: 0;
@@ -679,5 +672,99 @@ input::-webkit-date-and-time-value {
   }
   .tile-card {
     transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   ซากุระ: ต้นไม้ความคืบหน้า + กลีบร่วง
+   --------------------------------------------------------------------------- */
+.sakura-bloom {
+  animation: sakura-bloom 600ms cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+@keyframes sakura-bloom {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+}
+.sakura-sway {
+  animation: sakura-sway 6s ease-in-out infinite;
+}
+@keyframes sakura-sway {
+  50% {
+    transform: rotate(1.2deg);
+  }
+}
+.sakura-tree.is-wilted .sakura-sway {
+  animation: none;
+  transform: rotate(-3deg) scaleY(0.97);
+}
+.sakura-fall {
+  animation: sakura-fall 5s linear infinite;
+}
+@keyframes sakura-fall {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(18px, 150px) rotate(320deg);
+    opacity: 0;
+  }
+}
+.petal {
+  position: absolute;
+  top: -12px;
+  border-radius: 80% 0 80% 0;
+  opacity: 0;
+  animation: petal-fall linear infinite;
+}
+.petal-short {
+  animation-name: petal-fall-short;
+}
+@keyframes petal-fall-short {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate3d(24px, 220px, 0) rotate(300deg);
+    opacity: 0;
+  }
+}
+.petal-once {
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+@keyframes petal-fall {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(0deg);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.95;
+  }
+  50% {
+    transform: translate3d(28px, 50vh, 0) rotate(200deg);
+  }
+  100% {
+    transform: translate3d(-12px, 105vh, 0) rotate(420deg);
+    opacity: 0.2;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sakura-bloom,
+  .sakura-sway,
+  .sakura-fall {
+    animation: none;
+  }
+  .petal {
+    display: none;
   }
 }

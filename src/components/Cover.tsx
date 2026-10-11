@@ -1,5 +1,6 @@
 // แถบ cover ด้านบนหน้าโปรไฟล์: ธีมให้เลือก, แสงเหนือเคลื่อนช้า ๆ, เหรียญลอย, ดาวตอนกลางคืน, คำทักทายตามเวลา
 import { useEffect, useState, type ReactNode } from 'react'
+import { Petals } from './SakuraTree'
 import { cx } from './ui'
 
 type Theme = {
@@ -103,7 +104,10 @@ export function Cover({ theme, name, children }: { theme?: string | null; name?:
           />
         ))}
 
-      {COINS.map((c, i) => (
+      {/* ธีมซากุระ: กลีบร่วงแทนเหรียญ */}
+      {t.id === 'sakura' && <Petals count={16} className="absolute inset-0" short />}
+      {t.id !== 'sakura' &&
+        COINS.map((c, i) => (
         <span
           key={i}
           className="cover-coin absolute bottom-0"
@@ -111,7 +115,7 @@ export function Cover({ theme, name, children }: { theme?: string | null; name?:
         >
           <Coin size={c.size} />
         </span>
-      ))}
+        ))}
       {SPARKS.map((s, i) => (
         <span
           key={i}

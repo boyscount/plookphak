@@ -1,6 +1,7 @@
 import { fmtBaht, fmtDate, fmtDateTime, fmtDuration } from '../lib/format'
 import { dailyHistory, dailyPlan, loanSnapshot, type LoanState } from '../lib/loanMath'
-import { Confetti, CountUpBaht, DayStrip, MONEY_COLORS, ProgressRing, StackedBar } from './charts'
+import { CountUpBaht, DayStrip, MONEY_COLORS, StackedBar } from './charts'
+import { PetalShower, SakuraTree } from './SakuraTree'
 import { useNow } from '../lib/queries'
 import type { Loan } from '../lib/types'
 import { Card, cx, Row } from './ui'
@@ -85,6 +86,7 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
   const s = loanSnapshot(loan, loan.payments, now)
   const plan = s.daily ? dailyPlan(loan, loan.payments, now) : null
   // แบบรายวัน: ยอดที่ต้องจ่ายตอนนี้ = ค้างอยู่ทั้งหมด หรือดอกรอบถัดไป
+  const paidRatio = s.total > 0 ? (s.total - s.balance) / s.total : 0
   const roundDue = s.arrearsAmount > 0 ? s.arrearsAmount : (s.nextDue?.amount ?? 0)
   return (
     <Card className="rise-in space-y-4">
@@ -102,10 +104,18 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
       {live && <Countdown loan={loan} now={now} />}
 
       <div className="rounded-3xl bg-canvas p-4">
-        <div className="flex items-center gap-4">
-          <ProgressRing value={s.total > 0 ? (s.total - s.balance) / s.total : 0} size={76} stroke={8} />
+        {/* ต้นซากุระของการ "ปลูก": ยิ่งจ่ายยิ่งบาน */}
+        <div className="flex items-center gap-3">
+          <SakuraTree
+            progress={paidRatio}
+            wilted={s.state === 'overdue'}
+            full={s.state === 'paid'}
+            className="w-28 shrink-0 sm:w-32"
+          />
           <div className="min-w-0">
-            <p className="text-sm text-muted">จ่ายแล้ว</p>
+            <p className="text-sm text-muted">
+              {s.state === 'paid' ? '🌸 บานเต็มต้นแล้ว' : s.state === 'overdue' ? '🥀 ต้นเริ่มเหี่ยว จ่ายเพื่อให้บานต่อ' : `🌱 บานแล้ว ${Math.round(paidRatio * 100)}%`}
+            </p>
             <p className="tabular text-lg font-bold">
               {fmtBaht(s.total - s.balance)} <span className="text-sm font-medium text-muted">จาก {fmtBaht(s.total)}</span>
             </p>
@@ -124,7 +134,7 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
       </div>
 
       {s.daily && live && <DayStrip days={dailyHistory(loan, loan.payments, now, 14).filter((d) => d.status !== 'none')} />}
-      {live && s.state === 'paid' && <Confetti id={loan.id} />}
+      {live && s.state === 'paid' && <PetalShower id={loan.id} />}
 
       <div className="divide-y divide-line text-[15px]">
         <Row label="รูปแบบการจ่ายดอกเบี้ย" value={s.daily ? `รายวัน ก่อน ${(loan.daily_cutoff ?? '17:00').slice(0, 5)} น.` : 'พร้อมเงินต้น'} />
