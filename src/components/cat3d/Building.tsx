@@ -68,16 +68,27 @@ function Lanterns({ y, tone, night }: { y: number; tone: 'ok' | 'late' | 'off'; 
   useFrame(({ clock }) => {
     if (mat.current && tone === 'late') mat.current.emissiveIntensity = 0.8 + Math.abs(Math.sin(clock.elapsedTime * 3.5)) * 2.2
   })
-  const color = tone === 'late' ? '#ff3b4a' : tone === 'off' ? '#8a7d70' : '#ffd27a'
-  const glow = tone === 'off' ? 0 : night ? 1.6 : 0.5
-  const xs = [-1.6, -0.8, 0, 0.8, 1.6]
+  const color = tone === 'late' ? '#ff3b4a' : tone === 'off' ? '#4a4038' : '#ffb21f'
+  const glow = tone === 'off' ? 0 : night ? 1.8 : 0.9
+  const xs = [-1.7, -0.85, 0, 0.85, 1.7]
   return (
-    <group position={[0, y, D / 2 + 0.25]}>
-      {xs.map((x) => (
-        <mesh key={x} position={[x, 0, 0]} scale={[1, 1.3, 1]}>
-          <sphereGeometry args={[0.1, 10, 8]} />
-          <meshStandardMaterial ref={x === 0 ? mat : undefined} color={color} emissive={color} emissiveIntensity={glow} />
-        </mesh>
+    // แขวนใต้ขอบชายคาด้านนอก ไม่ให้ชายคาบัง (ชายคายื่นออกถึง z ≈ D/2 + 0.65)
+    <group position={[0, y, D / 2 + 0.5]}>
+      {xs.map((x, i) => (
+        <group key={x} position={[x, 0, 0]}>
+          <mesh position={[0, 0.2, 0]}>
+            <cylinderGeometry args={[0.008, 0.008, 0.3, 4]} />
+            <meshBasicMaterial color="#1b1410" />
+          </mesh>
+          <mesh scale={[1, 1.35, 1]}>
+            <sphereGeometry args={[0.13, 12, 10]} />
+            <meshStandardMaterial ref={i === 2 ? mat : undefined} color={color} emissive={color} emissiveIntensity={glow} />
+          </mesh>
+          <mesh position={[0, 0.17, 0]}>
+            <cylinderGeometry args={[0.07, 0.07, 0.03, 10]} />
+            <meshBasicMaterial color="#1b1410" />
+          </mesh>
+        </group>
       ))}
       {/* ไฟส่องจริงเฉพาะห้องที่ค้าง (คุมจำนวนไฟให้มือถือไม่หน่วง) */}
       {tone === 'late' && <pointLight color="#ff5a66" intensity={night ? 0.7 : 0.3} distance={2} />}
@@ -170,7 +181,7 @@ function Floor({
       </group>
       {/* ชายคาของชั้นนี้ + โคม */}
       <EaveSkirt y={FLOOR_H - 0.05} w={W + 1.3} d={D + 1.3} color={t.roof} />
-      <Lanterns y={FLOOR_H - 0.12} tone={tone} night={night} />
+      <Lanterns y={FLOOR_H - 0.62} tone={tone} night={night} />
     </group>
   )
 }
@@ -241,35 +252,53 @@ function FallingPetals({ night }: { night: boolean }) {
 /** เรือ: มีสลิปรอตรวจ = จอดที่ท่า, ไม่มี = ลอยอยู่ไกล ๆ */
 function Boat({ docked, onClick, night }: { docked: boolean; onClick?: () => void; night: boolean }) {
   const ref = useRef<THREE.Group>(null)
-  const goal = docked ? new THREE.Vector3(1.6, -0.15, D / 2 + 1.5) : new THREE.Vector3(5.5, -0.15, 4.5)
+  // จอดหน้าชานเรือน (อยู่ในมุมกล้องเสมอ) / ไม่มีสลิป = ลอยห่างออกไปทางขวา
+  const goal = docked ? new THREE.Vector3(1.4, 0, D / 2 + 1.9) : new THREE.Vector3(6.5, 0, 5.5)
+  const WATER = -0.2
   useFrame(({ clock }) => {
     const g = ref.current
     if (!g) return
-    g.position.lerp(goal, 0.02)
-    g.position.y = -0.15 + Math.sin(clock.elapsedTime * 1.6) * 0.04
+    g.position.lerp(goal, 0.03)
+    g.position.y = WATER + 0.12 + Math.sin(clock.elapsedTime * 1.6) * 0.04
     g.rotation.z = Math.sin(clock.elapsedTime * 1.2) * 0.05
   })
+  const wood = night ? '#4a2c1a' : '#8a5230'
   return (
     <group
       ref={ref}
-      position={[5.5, -0.15, 4.5]}
-      rotation={[0, 0.3, 0]}
+      position={[goal.x, 0, goal.z]}
+      rotation={[0, 0.35, 0]}
       onClick={(e) => {
         e.stopPropagation()
         onClick?.()
       }}
     >
-      <mesh scale={[1, 0.35, 0.45]}>
-        <sphereGeometry args={[0.7, 12, 8, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
-        <meshStandardMaterial color={night ? '#3a2416' : '#7a4a2c'} side={THREE.DoubleSide} flatShading />
+      {/* ลำเรือ: ครึ่งทรงรีลอยพ้นน้ำ */}
+      <mesh scale={[1.2, 0.42, 0.5]}>
+        <sphereGeometry args={[0.8, 16, 10, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2]} />
+        <meshStandardMaterial color={wood} side={THREE.DoubleSide} flatShading />
+      </mesh>
+      <mesh position={[0, -0.01, 0]} scale={[1.15, 1, 0.47]}>
+        <cylinderGeometry args={[0.8, 0.8, 0.02, 16]} />
+        <meshStandardMaterial color={night ? '#2e1c12' : '#6b3f26'} />
+      </mesh>
+      {/* เสา + โคมดวงเล็ก */}
+      <mesh position={[-0.55, 0.35, 0]}>
+        <cylinderGeometry args={[0.02, 0.02, 0.7, 6]} />
+        <meshStandardMaterial color={wood} />
+      </mesh>
+      <mesh position={[-0.55, 0.62, 0]} scale={[1, 1.3, 1]}>
+        <sphereGeometry args={[0.08, 10, 8]} />
+        <meshStandardMaterial color="#ffcc5c" emissive="#ffcc5c" emissiveIntensity={night ? 2 : 0.8} />
       </mesh>
       {docked && (
         <>
-          <mesh position={[0.1, 0.08, 0]}>
-            <boxGeometry args={[0.32, 0.22, 0.04]} />
-            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={night ? 0.5 : 0.1} />
+          {/* ซองสลิป */}
+          <mesh position={[0.15, 0.1, 0]} rotation={[0, 0, -0.15]}>
+            <boxGeometry args={[0.4, 0.26, 0.05]} />
+            <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={night ? 0.6 : 0.15} />
           </mesh>
-          <pointLight position={[0, 0.4, 0]} color="#ffd27a" intensity={night ? 1.2 : 0} distance={2.5} />
+          <pointLight position={[-0.55, 0.7, 0]} color="#ffd27a" intensity={night ? 1.5 : 0.4} distance={3} />
         </>
       )}
     </group>
@@ -357,7 +386,7 @@ export default function Building({
 
   return (
     <div className="relative h-full w-full">
-      <Canvas dpr={[1, 1.5]} camera={{ position: [9, focusY + 3.4, 12], fov: 40 }} onPointerMissed={() => onPick('')}>
+      <Canvas dpr={[1, 1.5]} camera={{ position: [9.5, focusY + 3.6, 13], fov: 40 }} onPointerMissed={() => onPick('')}>
         <color attach="background" args={[t.sky]} />
         <fog attach="fog" args={[t.fog, 12, 34]} />
         <hemisphereLight args={[night ? '#5a6aa8' : '#ffffff', night ? '#0b1430' : '#7fb0ae', t.light]} />

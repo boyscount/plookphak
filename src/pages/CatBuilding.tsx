@@ -133,6 +133,19 @@ export function CatBuilding() {
             ▼
           </button>
         </div>
+        {/* ความหมายของโคม/เรือ */}
+        <div className="pointer-events-none absolute top-3 left-3 space-y-1 rounded-2xl bg-black/35 px-3 py-2 text-[11px] font-semibold text-white backdrop-blur-sm">
+          <p className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full bg-[#ffb21f] shadow-[0_0_6px_#ffb21f]" /> ปกติ
+          </p>
+          <p className="flex items-center gap-1.5">
+            <span className="size-2.5 animate-pulse rounded-full bg-[#ff3b4a] shadow-[0_0_6px_#ff3b4a]" /> ค้างจ่าย
+          </p>
+          <p className="flex items-center gap-1.5">
+            <span className="size-2.5 rounded-full bg-[#4a4038] ring-1 ring-white/40" /> ปิดยอดแล้ว
+          </p>
+          <p>⛵ เรือจอด = มีสลิปรอตรวจ</p>
+        </div>
         <p className="pointer-events-none absolute bottom-2 left-0 right-0 text-center text-[11px] text-[#2f3a44]/70 [text-shadow:0_1px_2px_rgb(255_255_255/.6)]">
           ลากเพื่อหมุน · แตะห้องเพื่อดูรายละเอียด
         </p>
