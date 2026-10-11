@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
 import { Spinner } from './components/ui'
+import { UpdateBanner } from './components/UpdateBanner'
 import { AuthProvider, useAuth } from './lib/auth'
 import { supabase } from './lib/supabase'
 import { ThemeProvider } from './lib/theme'
@@ -90,6 +91,7 @@ export default function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routed />
+            <UpdateBanner />
           </BrowserRouter>
         </AuthProvider>
       </QueryClientProvider>
