@@ -5,6 +5,7 @@ import { PetalShower, SakuraTree } from './SakuraTree'
 import { useNow } from '../lib/queries'
 import type { Loan } from '../lib/types'
 import { Card, cx, Row } from './ui'
+import { LoanTimeline } from './LoanTimeline'
 
 export const stateLabel: Record<LoanState, { text: string; cls: string }> = {
   not_due: { text: 'ยังไม่ครบกำหนด', cls: 'bg-brand-50 text-brand-700' },
@@ -188,6 +189,15 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
         )}
       </div>
       {loan.note && <p className="rounded-2xl bg-canvas px-4 py-3 text-sm text-muted">📝 {loan.note}</p>}
+      <details className="group rounded-2xl bg-canvas">
+        <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between px-4 font-semibold [&::-webkit-details-marker]:hidden">
+          🕒 ไทม์ไลน์รายการนี้
+          <span className="text-muted transition group-open:rotate-180">⌄</span>
+        </summary>
+        <div className="px-4 pt-1 pb-2">
+          <LoanTimeline loan={loan} now={now} />
+        </div>
+      </details>
       {actions}
     </Card>
   )

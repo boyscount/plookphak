@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../lib/auth'
 import { fmtBaht, fmtDateTime, fromLocalInput, toLocalInput } from '../lib/format'
 import { loanSnapshot } from '../lib/loanMath'
-import { must, signedSlipUrl, useRefreshMoney } from '../lib/queries'
+import { must, signedSlipUrl, useLoans, useRefreshMoney } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import type { Loan, Payment } from '../lib/types'
 import { DayPicker } from './DayPicker'
+import { ReceiptSheet } from './ReceiptSheet'
 import { PayoffSummary } from './SlipSheet'
 import { cx, ErrorText, Field, Input, Pill, Sheet } from './ui'
 
@@ -55,13 +56,16 @@ export function PaymentList({ payments, title }: { payments: (Payment & { aka?: 
   )
 }
 
-function PaymentSheet({ payment, canReview, onClose }: { payment: Payment; canReview: boolean; onClose: () => void }) {
+export function PaymentSheet({ payment, canReview, onClose }: { payment: Payment; canReview: boolean; onClose: () => void }) {
   const refresh = useRefreshMoney()
   const [url, setUrl] = useState<string | null>(null)
   const [amount, setAmount] = useState(String(payment.amount))
   const [reason, setReason] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [receipt, setReceipt] = useState(false)
+  const { data: loans } = useLoans()
+  const loan = loans?.find((l) => l.id === payment.loan_id)
 
   useEffect(() => {
     if (payment.slip_path) signedSlipUrl(payment.slip_path).then(setUrl, () => setUrl(null))
@@ -112,6 +116,12 @@ function PaymentSheet({ payment, canReview, onClose }: { payment: Payment; canRe
         )}
         {payment.reject_reason && <p className="text-danger">เหตุผล: {payment.reject_reason}</p>}
         {payment.note && <p className="text-muted">📝 {payment.note}</p>}
+        {payment.status === 'approved' && loan && (
+          <Pill className="w-full" onClick={() => setReceipt(true)}>
+            🧾 ดูใบเสร็จ (บันทึก/แชร์เป็นรูป)
+          </Pill>
+        )}
+        {receipt && loan && <ReceiptSheet loan={loan} payment={payment} onClose={() => setReceipt(false)} />}
 
         {canReview && (
           <>

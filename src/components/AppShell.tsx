@@ -4,6 +4,7 @@ import { useNotifications } from '../lib/queries'
 import { Cover } from './Cover'
 import { Avatar, cx } from './ui'
 import { BellIcon, CatIcon, HomeIcon, PlusIcon, SearchIcon } from './icons'
+import { CommandPalette } from './CommandPalette'
 
 /** เมนูล่าง 5 ช่องแบบในรูปต้นแบบ */
 export function AppShell() {
@@ -29,6 +30,7 @@ export function AppShell() {
   return (
     <div className="mx-auto min-h-dvh max-w-5xl pb-28">
       <Outlet />
+      {isStaff && <CommandPalette />}
       <nav className="pb-safe fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur">
         <div className="mx-auto flex max-w-xl items-start px-2">
           {item('/', 'หน้าแรก', <HomeIcon />)}

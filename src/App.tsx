@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
+import { Toaster } from './components/Toast'
 import { UpdateBanner } from './components/UpdateBanner'
 import { AuthProvider, useAuth } from './lib/auth'
 import { supabase } from './lib/supabase'
@@ -92,6 +93,7 @@ export default function App() {
           <BrowserRouter>
             <Routed />
             <UpdateBanner />
+            <Toaster />
           </BrowserRouter>
         </AuthProvider>
       </QueryClientProvider>

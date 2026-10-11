@@ -1,10 +1,10 @@
 import { useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ProfileHeader } from '../components/AppShell'
+import { ProfileHeader, RoundButton } from '../components/AppShell'
+import { openPalette } from '../components/CommandPalette'
 import { RequestReviewList } from '../components/BorrowerTools'
 import { GoldCard } from '../components/GoldCard'
 import { StateBadge } from '../components/LoanCard'
-import { PaymentList } from '../components/Payments'
 import { AvatarArt, avatarById } from '../components/avatars'
 import { Avatar, Card, cx, EmptyState, Input, Pill, Tabs } from '../components/ui'
 import { PlusIcon } from '../components/icons'
@@ -16,6 +16,7 @@ import { dailyPlan, loanSnapshot, type LoanState } from '../lib/loanMath'
 import { useLoanRequests, useLoans, useNow, useProfiles } from '../lib/queries'
 import { roleLabel, type Loan, type Profile } from '../lib/types'
 import { RowsSkeleton, TilesSkeleton } from '../components/Skeleton'
+import { SlipQueue } from '../components/SlipQueue'
 
 const severity: Record<LoanState, number> = { overdue: 0, grace: 1, pending_review: 2, not_due: 3, paid: 4 }
 
@@ -139,7 +140,17 @@ export function Dashboard() {
 
   return (
     <div>
-      <ProfileHeader name={profile?.aka ?? ''} avatar={profile?.avatar} cover={profile?.cover} subtitle={roleLabel[profile?.role ?? 'admin']} />
+      <ProfileHeader
+        name={profile?.aka ?? ''}
+        avatar={profile?.avatar}
+        cover={profile?.cover}
+        subtitle={roleLabel[profile?.role ?? 'admin']}
+        right={
+          <RoundButton label="ค้นหาด่วน (Ctrl+K)" onClick={openPalette}>
+            <span className="text-xl">🔍</span>
+          </RoundButton>
+        }
+      />
       <div className="mt-6 space-y-3 px-4 sm:px-6">
         <div className="grid items-center gap-5 lg:grid-cols-[minmax(0,340px)_1fr]">
         <GoldCard
@@ -231,7 +242,7 @@ export function Dashboard() {
         {isLoading ? (
           tab === 'slips' ? <RowsSkeleton count={3} /> : <TilesSkeleton />
         ) : tab === 'slips' ? (
-          pending.length ? <PaymentList payments={pending} /> : <EmptyState title="ไม่มีสลิปรอตรวจ" />
+          pending.length ? <SlipQueue payments={pending} /> : <EmptyState title="ไม่มีสลิปรอตรวจ" />
         ) : tab === 'requests' ? (
           <RequestReviewList names={Object.fromEntries(rows.map((r) => [r.person.id, r.person.aka]))} />
         ) : (
