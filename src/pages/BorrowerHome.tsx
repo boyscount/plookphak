@@ -4,6 +4,7 @@ import { ProfileHeader } from '../components/AppShell'
 import { BadgeRow } from '../components/Badges'
 import { PayoffCalculatorSheet, RequestSheet } from '../components/BorrowerTools'
 import { GoldCard } from '../components/GoldCard'
+import { NextAction } from '../components/NextAction'
 import { memberStats, TIER_LABEL, tierOf } from '../lib/tier'
 import { LoanCard, StateBadge } from '../components/LoanCard'
 import { PaymentList } from '../components/Payments'
@@ -28,7 +29,9 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
   const now = useNow(1000)
 
   const payOpen = params.get('pay') === '1'
-  const setPayOpen = (v: boolean) => setParams(v ? { pay: '1' } : {}, { replace: true })
+  const payLoan = params.get('loan')
+  const setPayOpen = (v: boolean, loanId?: string) =>
+    setParams(v ? { pay: '1', ...(loanId ? { loan: loanId } : {}) } : {}, { replace: true })
 
   const all = loans ?? []
   const snaps = all.map((l) => ({ loan: l, s: loanSnapshot(l, l.payments, now) }))
@@ -54,6 +57,11 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
           )
         }
       />
+      {!isLoading && (
+        <div className="mt-6 px-4 sm:px-6">
+          <NextAction loans={all} now={now} onPay={(id) => setPayOpen(true, id)} />
+        </div>
+      )}
       <div className="mt-6 px-4 sm:px-6">
         <GoldCard
           name={profile?.aka ?? ''}
@@ -127,7 +135,7 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
         )}
       </div>
 
-      <SlipSheet loans={all} open={payOpen} onClose={() => setPayOpen(false)} />
+      <SlipSheet loans={all} open={payOpen} initialLoanId={payLoan} onClose={() => setPayOpen(false)} />
       <PayoffCalculatorSheet loans={all} open={calcOpen} onClose={() => setCalcOpen(false)} />
       <RequestSheet loans={all} open={reqOpen} onClose={() => setReqOpen(false)} />
     </div>

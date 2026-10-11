@@ -1,6 +1,6 @@
 // ผู้ยืม: อัปสลิปแล้วกด "ส่ง" ให้ admin ตรวจ
 // รายการแบบจ่ายดอกรายวัน: เลือกก่อนว่า "จ่ายดอกรายวัน" หรือ "จ่ายพร้อมเงินต้น" แล้วไปคนละหน้า
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { fmtBaht, fmtDateTime } from '../lib/format'
 import { dailyPlan, loanSnapshot } from '../lib/loanMath'
 import { must, uploadSlip, useRefreshMoney } from '../lib/queries'
@@ -74,11 +74,25 @@ function KindCard({
   )
 }
 
-export function SlipSheet({ loans, open, onClose }: { loans: Loan[]; open: boolean; onClose: () => void }) {
+export function SlipSheet({
+  loans,
+  open,
+  onClose,
+  initialLoanId,
+}: {
+  loans: Loan[]
+  open: boolean
+  onClose: () => void
+  /** เปิดมาพร้อมเลือกรายการนี้ไว้ (จากปุ่ม "จ่ายเลย") */
+  initialLoanId?: string | null
+}) {
   const refresh = useRefreshMoney()
   const [openedAt] = useState(() => Date.now())
   const unpaid = loans.filter((l) => balanceOf(l, openedAt) > 0)
-  const [loanId, setLoanId] = useState('')
+  const [loanId, setLoanId] = useState(initialLoanId ?? '')
+  useEffect(() => {
+    if (open && initialLoanId) setLoanId(initialLoanId)
+  }, [open, initialLoanId])
   const [kind, setKind] = useState<PayKind | null>(null)
   const [file, setFile] = useState<File | null>(null)
   const [amount, setAmount] = useState('')
