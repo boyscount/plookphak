@@ -146,7 +146,7 @@ export function CatBuilding() {
           </p>
           <p>⛵ เรือจอด = มีสลิปรอตรวจ</p>
         </div>
-        <p className="pointer-events-none absolute bottom-2 left-0 right-0 text-center text-[11px] text-[#2f3a44]/70 [text-shadow:0_1px_2px_rgb(255_255_255/.6)]">
+        <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
           ลากเพื่อหมุน · แตะห้องเพื่อดูรายละเอียด
         </p>
       </div>

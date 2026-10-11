@@ -111,7 +111,7 @@ export function CatHome() {
             </div>
           </div>
         )}
-        <p className="pointer-events-none absolute bottom-2 left-0 right-0 text-center text-[11px] text-[#6b5a8f]">
+        <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
           ลากเพื่อหมุนห้อง · บีบเพื่อซูม
         </p>
       </div>

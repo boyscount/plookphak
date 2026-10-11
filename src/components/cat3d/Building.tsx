@@ -477,7 +477,7 @@ export default function Building({
         <button
           type="button"
           onClick={onBoat}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#1a1240] shadow"
+          className="absolute bottom-11 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1.5 text-xs font-semibold text-[#1a1240] shadow"
         >
           ⛵ เรือส่งสลิปมาเทียบท่า {pending} ใบ — แตะเพื่อตรวจ
         </button>
