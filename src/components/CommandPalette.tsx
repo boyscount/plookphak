@@ -5,6 +5,7 @@ import { fmtBaht } from '../lib/format'
 import { loanSnapshot } from '../lib/loanMath'
 import { useLoans, useProfiles } from '../lib/queries'
 import { Avatar, cx } from './ui'
+import { presenceState, usePresence } from '../lib/presence'
 
 const OPEN_EVENT = 'plookphak:palette'
 const RECENT_KEY = 'plookphak:palette-recent'
@@ -55,6 +56,7 @@ export function CommandPalette() {
   const input = useRef<HTMLInputElement>(null)
   const { data: people } = useProfiles('borrower')
   const { data: loans } = useLoans()
+  const presence = usePresence()
 
   useEffect(() => {
     const show = () => {
@@ -97,11 +99,14 @@ export function CommandPalette() {
       const snaps = mine.map((l) => loanSnapshot(l, l.payments, now))
       const balance = snaps.reduce((s, x) => s + x.balance, 0)
       const late = snaps.some((x) => x.state === 'overdue')
+      const ps = presence.get(p.id)
       return {
         id: `b:${p.id}`,
         label: p.aka,
-        hint: !p.active ? 'ปิดใช้งาน' : balance > 0 ? `ค้าง ${fmtBaht(balance)}${late ? ' · เลยกำหนด' : ''}` : 'ไม่มียอดค้าง',
-        icon: <Avatar name={p.aka} avatar={p.avatar} size="sm" />,
+        hint: !p.active
+          ? 'ปิดใช้งาน'
+          : `${balance > 0 ? `ค้าง ${fmtBaht(balance)}${late ? ' · เลยกำหนด' : ''}` : 'ไม่มียอดค้าง'}${ps?.online ? ' · ออนไลน์อยู่' : ''}`,
+        icon: <Avatar name={p.aka} avatar={p.avatar} size="sm" presence={presenceState(ps)} />,
         to: `/borrowers/${p.id}`,
         keywords: `${p.aka} ${p.username}`.toLowerCase(),
         late,
@@ -112,7 +117,7 @@ export function CommandPalette() {
       icon: <span className="grid size-11 place-items-center rounded-full bg-pill text-xl">{ACTION_ICON[a.id]}</span>,
     }))
     return [...borrowers, ...actions]
-  }, [open, people, loans])
+  }, [open, people, loans, presence])
 
   const results = useMemo(() => {
     const term = q.trim().toLowerCase()

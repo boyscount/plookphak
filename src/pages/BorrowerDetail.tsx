@@ -16,6 +16,7 @@ import { DayPicker } from '../components/DayPicker'
 import { BadgeRow, TierChip } from '../components/Badges'
 import { memberStats, tierOf } from '../lib/tier'
 import { LoanCardSkeleton, PageSkeleton } from '../components/Skeleton'
+import { presenceText, usePresence } from '../lib/presence'
 
 export function BorrowerDetail() {
   const { id = '' } = useParams()
@@ -27,6 +28,7 @@ export function BorrowerDetail() {
   const [cashFor, setCashFor] = useState<Loan | null>(null)
   const [editProfile, setEditProfile] = useState(false)
   const [resetPw, setResetPw] = useState(false)
+  const seen = usePresence().get(id)
 
   if (!person) return <PageSkeleton />
   const all = loans ?? []
@@ -61,6 +63,10 @@ export function BorrowerDetail() {
           <span className="flex flex-wrap items-center gap-2">
             @{person.username}
             {!person.active && ' · ปิดใช้งาน'}
+            <span className={cx('text-sm', seen?.online ? 'font-semibold text-ok' : 'text-muted')}>
+              {seen?.online ? '● ' : ''}
+              {presenceText(seen)}
+            </span>
             <TierChip tier={tierOf(stats)} />
           </span>
         }

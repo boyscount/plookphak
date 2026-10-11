@@ -8,6 +8,8 @@ if (!url || !key) {
 }
 
 export const supabase = createClient(url, key)
+export const SUPABASE_URL = url
+export const SUPABASE_KEY = key
 
 /** ผู้ใช้ล็อกอินด้วย username — Supabase Auth ต้องการอีเมล จึงแปลงเป็นอีเมลภายใน */
 export const usernameToEmail = (username: string) => {

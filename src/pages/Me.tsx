@@ -15,6 +15,8 @@ import { errorText, supabase } from '../lib/supabase'
 import { roleLabel } from '../lib/types'
 import { PasswordSheet, ToggleActive } from './BorrowerDetail'
 import { RowsSkeleton } from '../components/Skeleton'
+import { presenceState, presenceText, usePresence } from '../lib/presence'
+import { OnlinePanel } from '../components/OnlinePanel'
 
 export function Me() {
   const { profile, isSuper, isStaff } = useAuth()
@@ -52,6 +54,7 @@ export function Me() {
 
       {isStaff && (
         <div className="mt-4 space-y-4 px-4 sm:px-6">
+          <OnlinePanel />
           <PromptPaySettings />
           <ExportCard withAudit={isSuper} />
         </div>
@@ -360,6 +363,7 @@ function AdminManager() {
   const qc = useQueryClient()
   const { data: settings } = useSettings()
   const { data: admins, isLoading } = useProfiles('admin')
+  const presence = usePresence()
   const [form, setForm] = useState({ aka: '', username: '', password: '' })
   const [error, setError] = useState<string | null>(null)
   const [pwFor, setPwFor] = useState<string | null>(null)
@@ -433,11 +437,11 @@ function AdminManager() {
           {admins.map((a) => (
             <Card key={a.id}>
               <div className="flex items-center gap-3">
-                <Avatar name={a.aka} avatar={a.avatar} size="sm" />
+                <Avatar name={a.aka} avatar={a.avatar} size="sm" presence={presenceState(presence.get(a.id))} />
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">{a.aka}</p>
                   <p className="text-sm text-muted">
-                    @{a.username} · {a.active ? 'ใช้งาน' : 'ปิดใช้งาน'}
+                    @{a.username} · {a.active ? presenceText(presence.get(a.id)) : 'ปิดใช้งาน'}
                   </p>
                 </div>
                 <button className="rounded-full bg-pill px-3 py-2 text-sm font-semibold" onClick={() => setPwFor(a.id)}>

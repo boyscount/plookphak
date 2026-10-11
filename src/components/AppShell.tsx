@@ -5,10 +5,12 @@ import { Cover } from './Cover'
 import { Avatar, cx } from './ui'
 import { BellIcon, CatIcon, HomeIcon, PlusIcon, SearchIcon } from './icons'
 import { CommandPalette } from './CommandPalette'
+import { usePresenceBeat } from '../lib/presence'
 
 /** เมนูล่าง 5 ช่องแบบในรูปต้นแบบ */
 export function AppShell() {
   const { isStaff, profile } = useAuth()
+  usePresenceBeat()
   const navigate = useNavigate()
   const { data: notes } = useNotifications()
   const unread = notes?.filter((n) => !n.read_at).length ?? 0

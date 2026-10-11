@@ -17,6 +17,7 @@ import { useLoanRequests, useLoans, useNow, useProfiles } from '../lib/queries'
 import { roleLabel, type Loan, type Profile } from '../lib/types'
 import { RowsSkeleton, TilesSkeleton } from '../components/Skeleton'
 import { SlipQueue } from '../components/SlipQueue'
+import { presenceState, usePresence } from '../lib/presence'
 
 const severity: Record<LoanState, number> = { overdue: 0, grace: 1, pending_review: 2, not_due: 3, paid: 4 }
 
@@ -79,9 +80,10 @@ function Stat({ label, value, tone, onClick }: { label: string; value: React.Rea
 }
 
 export function BorrowerRow({ r }: { r: ReturnType<typeof useBorrowerRows>['rows'][number] }) {
+  const presence = usePresence()
   return (
     <Link to={`/borrowers/${r.person.id}`} className="flex min-w-0 items-center gap-3 rounded-2xl bg-surface p-3.5 active:bg-pill">
-      <Avatar name={r.person.aka} avatar={r.person.avatar} size="sm" />
+      <Avatar name={r.person.aka} avatar={r.person.avatar} size="sm" presence={presenceState(presence.get(r.person.id))} />
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-2">
           <span className="truncate font-semibold">
@@ -297,6 +299,7 @@ const TIER_ICON: Record<Tier, string> = { platinum: '💎', gold: '⭐', silver:
  */
 function BorrowerTile({ r, index }: { r: Row; index: number }) {
   const a = avatarById(r.person.avatar)
+  const online = presenceState(usePresence().get(r.person.id))
   const late = r.overdueDays > 0 || r.principalLate
   const pct = Math.round(r.paidRatio * 100)
   const card = useRef<HTMLDivElement>(null)
@@ -371,7 +374,16 @@ function BorrowerTile({ r, index }: { r: Row; index: number }) {
           </div>
         </div>
       </div>
-      <p className="mt-2 line-clamp-2 leading-snug font-semibold">{r.person.aka}</p>
+      <p className="mt-2 line-clamp-2 leading-snug font-semibold">
+        {online && (
+          <span
+            role="img"
+            aria-label={online === 'online' ? 'ออนไลน์อยู่' : 'ใช้งานไม่นานนี้'}
+            className={cx('mr-1.5 inline-block size-2.5 rounded-full align-middle', online === 'online' ? 'bg-[#22c55e]' : 'bg-[#f5b301]')}
+          />
+        )}
+        {r.person.aka}
+      </p>
       <p className="text-sm">
         <span className="tabular font-semibold">{fmtBaht(r.balance)}</span>
         {r.nextDue && r.balance > 0 && (

@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:parity": "cross-env PARITY=1 vitest run parity",
     "test:rls": "node --experimental-websocket scripts/rls-check.mjs",
+    "test:presence": "node --experimental-websocket scripts/presence-check.mjs",
     "db:login": "supabase login",
     "db:link": "supabase link --project-ref dsueyznupcttylnlevhd",
     "db:mark-applied": "supabase migration repair --status applied 20261010000000 20261010000001 20261011000000 20261012000000",

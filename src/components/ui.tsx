@@ -44,11 +44,14 @@ export function Avatar({
   avatar,
   size = 'lg',
   onClick,
+  presence,
 }: {
   name: string
   avatar?: string | null
   size?: 'xs' | 'sm' | 'lg'
   onClick?: () => void
+  /** จุดสถานะ: online = เขียว, recent = เหลือง (ใช้งานไม่นานนี้) */
+  presence?: 'online' | 'recent' | null
 }) {
   const cls = cx(
     'block shrink-0 rounded-full',
@@ -56,7 +59,23 @@ export function Avatar({
     size === 'sm' && 'size-11',
     size === 'xs' && 'size-7',
   )
-  const art = <AvatarArt id={avatar} className="size-full" />
+  const dot = presence && (
+    <span
+      role="img"
+      aria-label={presence === 'online' ? 'ออนไลน์อยู่' : 'ใช้งานไม่นานนี้'}
+      className={cx(
+        'absolute rounded-full ring-canvas',
+        presence === 'online' ? 'bg-[#22c55e]' : 'bg-[#f5b301]',
+        size === 'lg' ? 'top-1 right-1 size-6 ring-4' : size === 'sm' ? 'right-0 bottom-0 size-3.5 ring-2' : 'right-0 bottom-0 size-2.5 ring-2',
+      )}
+    />
+  )
+  const art = (
+    <>
+      <AvatarArt id={avatar} className="size-full" />
+      {dot}
+    </>
+  )
   return onClick ? (
     <button type="button" onClick={onClick} className={cx(cls, 'relative active:scale-95')} aria-label={`เปลี่ยนรูปโปรไฟล์ของ ${name}`}>
       {art}
@@ -65,7 +84,7 @@ export function Avatar({
       </span>
     </button>
   ) : (
-    <span className={cls} title={name}>
+    <span className={cx(cls, dot && 'relative')} title={name}>
       {art}
     </span>
   )
