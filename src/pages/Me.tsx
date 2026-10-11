@@ -1,15 +1,15 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { DarkPill, ProfileHeader, RoundButton } from '../components/AppShell'
+import { AuditLog } from '../components/AuditLog'
 import { AVATARS, AvatarArt } from '../components/avatars'
 import { COVERS, CoverSwatch } from '../components/Cover'
-import { GearIcon, KeyIcon, LogoutIcon, ShieldIcon } from '../components/icons'
+import { GearIcon, KeyIcon, LogoutIcon } from '../components/icons'
 import { Avatar, Card, cx, EmptyState, ErrorText, Field, Input, Pill, Sheet, Spinner, Tabs } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { useTheme, type ThemePref } from '../lib/theme'
 import { inspectThaiQr, isValidPromptPayId } from '../lib/promptpay'
 import { decodeQrImage } from '../lib/qrDecode'
-import { fmtDateTime } from '../lib/format'
 import { must, useProfiles, useSettings } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import { roleLabel } from '../lib/types'
@@ -450,64 +450,5 @@ function AdminManager() {
       )}
       {pwFor && <PasswordSheet userId={pwFor} onClose={() => setPwFor(null)} />}
     </div>
-  )
-}
-
-type AuditRow = {
-  id: number
-  actor: string | null
-  action: string
-  table_name: string
-  new_data: Record<string, unknown> | null
-  old_data: Record<string, unknown> | null
-  at: string
-}
-
-const tableLabel: Record<string, string> = {
-  loans: 'รายการยืม',
-  payments: 'การชำระ',
-  profiles: 'บัญชี',
-  app_settings: 'ตั้งค่า',
-}
-const actionLabel: Record<string, string> = { insert: 'เพิ่ม', update: 'แก้ไข', delete: 'ลบ' }
-
-function AuditLog() {
-  const { data: people } = useProfiles()
-  const { data, isLoading } = useQuery({
-    queryKey: ['audit'],
-    queryFn: () => must<AuditRow[]>(supabase.from('audit_log').select('*').order('at', { ascending: false }).limit(200)),
-  })
-  const name = (id: string | null) => (id ? (people?.find((p) => p.id === id)?.aka ?? 'ไม่ทราบ') : 'ระบบ')
-
-  if (isLoading) return <Spinner />
-  if (!data?.length) return <EmptyState title="ยังไม่มีบันทึก" />
-  return (
-    <ul className="space-y-2">
-      {data.map((r) => {
-        const changed =
-          r.action === 'update' && r.old_data && r.new_data
-            ? Object.keys(r.new_data).filter(
-                (k) => !['updated_at', 'reviewed_at'].includes(k) && JSON.stringify(r.new_data![k]) !== JSON.stringify(r.old_data![k]),
-              )
-            : []
-        return (
-          <li key={r.id} className="rounded-2xl bg-surface p-3.5">
-            <div className="flex items-center gap-2">
-              <ShieldIcon className="size-5 text-brand-600" />
-              <span className="font-semibold">
-                {name(r.actor)} {actionLabel[r.action]}
-                {tableLabel[r.table_name] ?? r.table_name}
-              </span>
-            </div>
-            {changed.length > 0 && (
-              <p className="mt-1 text-sm break-all text-muted">
-                {changed.map((k) => `${k}: ${JSON.stringify(r.old_data![k])} → ${JSON.stringify(r.new_data![k])}`).join(' · ')}
-              </p>
-            )}
-            <p className="mt-0.5 text-xs text-muted">{fmtDateTime(r.at)}</p>
-          </li>
-        )
-      })}
-    </ul>
   )
 }
