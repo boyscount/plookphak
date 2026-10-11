@@ -6,7 +6,7 @@ import { GoldCard } from '../components/GoldCard'
 import { StateBadge } from '../components/LoanCard'
 import { PaymentList } from '../components/Payments'
 import { AvatarArt, avatarById } from '../components/avatars'
-import { Avatar, Card, cx, EmptyState, Input, Pill, Spinner, Tabs } from '../components/ui'
+import { Avatar, Card, cx, EmptyState, Input, Pill, Tabs } from '../components/ui'
 import { PlusIcon } from '../components/icons'
 import { CountUpBaht, MONEY_COLORS, ProgressRing, RankBars, StackedBar } from '../components/charts'
 import { useAuth } from '../lib/auth'
@@ -15,6 +15,7 @@ import { fmtBaht, fmtDateTime } from '../lib/format'
 import { dailyPlan, loanSnapshot, type LoanState } from '../lib/loanMath'
 import { useLoanRequests, useLoans, useNow, useProfiles } from '../lib/queries'
 import { roleLabel, type Loan, type Profile } from '../lib/types'
+import { RowsSkeleton, TilesSkeleton } from '../components/Skeleton'
 
 const severity: Record<LoanState, number> = { overdue: 0, grace: 1, pending_review: 2, not_due: 3, paid: 4 }
 
@@ -228,7 +229,7 @@ export function Dashboard() {
       </div>
       <div className="mt-4 px-4 sm:px-6">
         {isLoading ? (
-          <Spinner />
+          tab === 'slips' ? <RowsSkeleton count={3} /> : <TilesSkeleton />
         ) : tab === 'slips' ? (
           pending.length ? <PaymentList payments={pending} /> : <EmptyState title="ไม่มีสลิปรอตรวจ" />
         ) : tab === 'requests' ? (
@@ -260,7 +261,7 @@ export function ModeChip({ mode, solid }: { mode: string; solid?: boolean }) {
   return (
     <span
       className={cx(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold whitespace-nowrap',
+        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap',
         solid
           ? daily
             ? 'bg-brand-600 text-white'
@@ -336,7 +337,7 @@ function BorrowerTile({ r, index }: { r: Row; index: number }) {
           <span className="grid size-7 place-items-center rounded-full bg-black/25 text-sm backdrop-blur-sm" title={r.tier}>
             {TIER_ICON[r.tier]}
           </span>
-          {r.pending > 0 && <span className="rounded-full bg-sky-500 px-2 py-0.5 text-[11px] font-bold text-white">📩 {r.pending}</span>}
+          {r.pending > 0 && <span className="rounded-full bg-sky-500 px-2 py-0.5 text-xs font-bold text-white">📩 {r.pending}</span>}
         </div>
         <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/75 via-black/35 to-transparent px-3 pt-10 pb-2.5 text-white">
           {(late || r.balance <= 0) && (
@@ -346,7 +347,7 @@ function BorrowerTile({ r, index }: { r: Row; index: number }) {
                   {r.overdueDays > 0 ? `ค้าง ${r.overdueDays} วัน` : 'เลยกำหนด'}
                 </span>
               ) : (
-                <span className="rounded-lg bg-ok px-2 py-0.5 text-xs font-bold">จ่ายครบ</span>
+                <span className="rounded-lg bg-ok px-2 py-0.5 text-xs font-bold text-on-status">จ่ายครบ</span>
               )}
             </div>
           )}
@@ -437,7 +438,7 @@ export function Browse() {
     <div className="pt-safe px-4 sm:px-6">
       <h1 className="pt-4 text-3xl font-bold">เรียกดู</h1>
       <Input className="mt-4" placeholder="ค้นหาชื่อ / AKA / username" value={q} onChange={(e) => setQ(e.target.value)} />
-      <div className="mt-4">{isLoading ? <Spinner /> : <BorrowerList rows={filtered} empty="ไม่พบผู้ยืม" />}</div>
+      <div className="mt-4">{isLoading ? <TilesSkeleton /> : <BorrowerList rows={filtered} empty="ไม่พบผู้ยืม" />}</div>
     </div>
   )
 }

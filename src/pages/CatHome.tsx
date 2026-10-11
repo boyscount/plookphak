@@ -7,11 +7,12 @@ import { TierChip } from '../components/Badges'
 import type { CatAction } from '../components/cat3d/Cat'
 import { BackIcon } from '../components/icons'
 import { SlipSheet } from '../components/SlipSheet'
-import { Avatar, cx, Spinner } from '../components/ui'
+import { Avatar, cx } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { catLine, catStats } from '../lib/catStats'
 import { fmtBaht } from '../lib/format'
 import { useLoans, useNow, useProfile } from '../lib/queries'
+import { SceneSkeleton } from '../components/Skeleton'
 
 const CatRoom = lazy(() => import('../components/cat3d/CatRoom'))
 
@@ -50,7 +51,7 @@ export function CatHome() {
   const [payOpen, setPayOpen] = useState(false)
   const webgl = useMemo(hasWebGL, [])
 
-  if (isLoading || !owner) return <Spinner />
+  if (isLoading || !owner) return <SceneSkeleton label="กำลังเดินไปบ้านแมว… 🐾" />
   const s = catStats(loans ?? [], now)
   const line = catLine(s, owner.aka)
   const color = catColorOf(owner.avatar)
@@ -144,7 +145,7 @@ export function CatHome() {
           >
             <span className="text-3xl">{b.icon}</span>
             <span className="mt-1 text-sm font-semibold">{b.label}</span>
-            <span className="text-[11px] text-muted">{b.hint}</span>
+            <span className="text-xs text-muted">{b.hint}</span>
           </button>
         ))}
       </div>

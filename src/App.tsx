@@ -2,7 +2,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { AppShell } from './components/AppShell'
-import { Spinner } from './components/ui'
 import { UpdateBanner } from './components/UpdateBanner'
 import { AuthProvider, useAuth } from './lib/auth'
 import { supabase } from './lib/supabase'
@@ -14,6 +13,7 @@ import { Browse, Dashboard } from './pages/Dashboard'
 import { Login } from './pages/Login'
 import { Me } from './pages/Me'
 import { NewBorrower } from './pages/NewBorrower'
+import { PageSkeleton, SceneSkeleton } from './components/Skeleton'
 
 // บ้านแมวมี three.js (~ครึ่ง MB) — โหลดเมื่อเปิดหน้านี้เท่านั้น
 const CatHome = lazy(() => import('./pages/CatHome'))
@@ -25,7 +25,7 @@ const queryClient = new QueryClient({
 
 function Routed() {
   const { session, profile, loading, isStaff } = useAuth()
-  if (loading) return <Spinner />
+  if (loading) return <PageSkeleton />
   if (!session) return <Login />
   if (!profile || !profile.active) {
     return (
@@ -51,7 +51,7 @@ function Routed() {
         <Route
           path="cat"
           element={
-            <Suspense fallback={<Spinner />}>
+            <Suspense fallback={<SceneSkeleton />}>
               <CatHome />
             </Suspense>
           }
@@ -62,7 +62,7 @@ function Routed() {
           <Route
             path="building"
             element={
-              <Suspense fallback={<Spinner />}>
+              <Suspense fallback={<SceneSkeleton />}>
                 <CatBuilding />
               </Suspense>
             }
@@ -72,7 +72,7 @@ function Routed() {
           <Route
             path="borrowers/:id/cat"
             element={
-              <Suspense fallback={<Spinner />}>
+              <Suspense fallback={<SceneSkeleton />}>
                 <CatHome />
               </Suspense>
             }

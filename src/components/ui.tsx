@@ -20,8 +20,8 @@ export function Pill({
     gray: 'bg-pill text-ink hover:bg-pill-hover',
     brand: 'bg-brand-600 text-white hover:bg-brand-700',
     dark: 'bg-brand-900 text-white hover:bg-black',
-    danger: 'bg-danger text-white hover:brightness-95',
-    ok: 'bg-ok text-white hover:brightness-95',
+    danger: 'bg-danger text-on-status hover:brightness-95',
+    ok: 'bg-ok text-on-status hover:brightness-95',
   }
   return (
     <button
@@ -90,12 +90,12 @@ export function Tabs<T extends string>({
           onClick={() => onChange(t.id)}
           className={cx(
             'relative shrink-0 pb-2.5 text-[17px] font-semibold whitespace-nowrap',
-            value === t.id ? 'text-brand-600' : 'text-ink',
+            value === t.id ? 'text-brand-700' : 'text-ink',
           )}
         >
           {t.label}
           {!!t.badge && (
-            <span className="ml-1.5 rounded-full bg-danger px-1.5 text-xs text-white">{t.badge}</span>
+            <span className="ml-1.5 rounded-full bg-danger px-1.5 text-xs text-on-status">{t.badge}</span>
           )}
           {value === t.id && <span className="absolute inset-x-0 bottom-0 h-1 rounded-full bg-brand-600" />}
         </button>

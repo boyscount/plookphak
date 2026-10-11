@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { EmptyState, Spinner, cx } from '../components/ui'
+import { EmptyState, cx } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { timeAgo } from '../lib/format'
 import { useLoans, useMarkAllRead, useNotifications } from '../lib/queries'
+import { RowsSkeleton } from '../components/Skeleton'
 
 export function Activity() {
   const { isStaff } = useAuth()
@@ -33,7 +34,7 @@ export function Activity() {
       <h1 className="pt-4 text-3xl font-bold">กิจกรรม</h1>
       <div className="mt-4">
         {isLoading ? (
-          <Spinner />
+          <RowsSkeleton />
         ) : !data?.length ? (
           <EmptyState title="ยังไม่มีการแจ้งเตือน" subtitle="เงียบจังเลย…เงียบไปแล้ว…" />
         ) : (

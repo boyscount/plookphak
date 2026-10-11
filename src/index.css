@@ -1,7 +1,9 @@
 @import 'tailwindcss';
 
 @theme {
-  --font-sans: 'Prompt', ui-sans-serif, system-ui, sans-serif;
+  /* เนื้อหา: IBM Plex Sans Thai อ่านง่ายที่ขนาดเล็ก · หัวข้อและตัวเลขใหญ่: Prompt (บุคลิกของแบรนด์) */
+  --font-sans: 'IBM Plex Sans Thai', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Prompt', 'IBM Plex Sans Thai', ui-sans-serif, sans-serif;
   --color-brand-50: #f4efff;
   --color-brand-100: #e9dfff;
   --color-brand-400: #a372ff;
@@ -10,16 +12,18 @@
   --color-brand-700: #5f24c7;
   --color-brand-900: #2a1252;
   --color-ink: #0e0e10;
-  --color-muted: #6b6b76;
+  --color-muted: #5d5d68;
   --color-pill: #e7e7ec;
   --color-canvas: #f7f7f8;
   --color-sun: #ffc95c;
-  --color-danger: #e5383b;
-  --color-ok: #14a06b;
+  --color-danger: #d0262b;
+  --color-ok: #0b8457;
   --color-warn: #f59f00;
   --color-surface: #ffffff;
   --color-pill-hover: #dcdce3;
   --color-line: #0000000f;
+  /* ตัวหนังสือบนพื้นสี ok/danger (มืด: พื้นสว่างขึ้น ต้องใช้ตัวเข้ม) */
+  --color-on-status: #ffffff;
 }
 
 /* สีกราฟเงินต้น/ดอก/ค่าปรับ — ผ่าน dataviz validator ทั้งสว่าง (#fff) และมืด (#1a1722) */
@@ -49,6 +53,7 @@
   --color-brand-900: #3a2470;
   --color-danger: #ff6b6e;
   --color-ok: #34d399;
+  --color-on-status: #0b0a10;
   --color-emerald-50: #0f2a21;
   --color-emerald-100: #12352a;
   --color-red-50: #3a1519;
@@ -79,6 +84,7 @@
     --color-brand-900: #3a2470;
     --color-danger: #ff6b6e;
     --color-ok: #34d399;
+  --color-on-status: #0b0a10;
     --color-emerald-50: #0f2a21;
     --color-emerald-100: #12352a;
     --color-red-50: #3a1519;
@@ -106,6 +112,30 @@ body {
 
 body {
   min-height: 100dvh;
+  /* ตัวเลขกว้างเท่ากันทุกหลัก — ยอดเงิน/นับถอยหลังไม่สั่น */
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* หัวข้อและตัวเลขขนาดใหญ่ใช้ฟอนต์แบรนด์ */
+h1,
+h2,
+.font-display,
+.text-2xl,
+.text-3xl,
+.text-4xl,
+.text-5xl,
+.text-6xl {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* โฟกัสด้วยคีย์บอร์ดเห็นชัด (เมาส์/นิ้วไม่ขึ้น) */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--color-brand-500);
+  outline-offset: 2px;
 }
 
 .tabular {
@@ -514,7 +544,7 @@ body {
   border-radius: 9999px;
   background: rgb(255 255 255 / 0.92);
   color: #1f1530;
-  font: 500 11px/1.3 'Prompt', sans-serif;
+  font: 600 12px/1.3 var(--font-sans);
   box-shadow: 0 4px 12px -4px rgb(0 0 0 / 0.4);
   cursor: pointer;
 }
@@ -539,7 +569,7 @@ body {
   border-radius: 14px;
   background: linear-gradient(135deg, #8c6516, #f6dc8a 45%, #c99a35);
   color: #3d2c08;
-  font: 500 11px/1.25 'Prompt', sans-serif;
+  font: 600 12px/1.25 var(--font-sans);
   white-space: nowrap;
   box-shadow: 0 0 24px rgb(255 207 77 / 0.5);
 }
@@ -793,6 +823,25 @@ input::-webkit-date-and-time-value {
 @media (prefers-reduced-motion: reduce) {
   .lake-shimmer,
   .lantern-glow {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Skeleton ระหว่างโหลด: แถบแสงวิ่งผ่าน
+   --------------------------------------------------------------------------- */
+@keyframes skel {
+  to {
+    background-position: -200% 0;
+  }
+}
+.skel {
+  background: linear-gradient(90deg, var(--color-pill) 25%, var(--color-pill-hover) 50%, var(--color-pill) 75%);
+  background-size: 200% 100%;
+  animation: skel 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skel {
     animation: none;
   }
 }

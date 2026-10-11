@@ -80,9 +80,9 @@ export function DayPicker({
                 d.today && !on && 'ring-2 ring-brand-400',
               )}
             >
-              <span className="text-[10px] opacity-80">{d.today ? 'วันนี้' : fmt(d.date).split(' ')[1]}</span>
+              <span className="text-[11px] opacity-80">{d.today ? 'วันนี้' : fmt(d.date).split(' ')[1]}</span>
               <span className="text-lg leading-tight">{new Date(`${d.date}T00:00:00Z`).getUTCDate()}</span>
-              <span className="text-[10px]">{d.covered ? '✓ จ่ายแล้ว' : d.overdue ? 'ค้าง' : fmtBaht(d.amount)}</span>
+              <span className="text-[11px]">{d.covered ? '✓ จ่ายแล้ว' : d.overdue ? 'ค้าง' : fmtBaht(d.amount)}</span>
             </button>
           )
         })}

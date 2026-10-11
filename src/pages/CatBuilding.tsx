@@ -6,11 +6,12 @@ import { catColorOf } from '../components/avatars'
 import { TierChip } from '../components/Badges'
 import type { FloorInfo } from '../components/cat3d/Building'
 import { BackIcon } from '../components/icons'
-import { Avatar, cx, Pill, Spinner } from '../components/ui'
+import { Avatar, cx, Pill } from '../components/ui'
 import { catLine, catStats } from '../lib/catStats'
 import { fmtBaht } from '../lib/format'
 import { loanSnapshot } from '../lib/loanMath'
 import { useLoans, useNow, useProfiles } from '../lib/queries'
+import { SceneSkeleton } from '../components/Skeleton'
 
 const Building = lazy(() => import('../components/cat3d/Building'))
 const FLOOR_H = 1.7 // ต้องตรงกับ Building.tsx
@@ -39,7 +40,7 @@ export function CatBuilding() {
       .sort((a, b) => MOOD_RANK[a.stats.mood] - MOOD_RANK[b.stats.mood] || b.balance - a.balance)
   }, [people, loans, now])
 
-  if (l1 || l2) return <Spinner />
+  if (l1 || l2) return <SceneSkeleton label="กำลังพายเรือไปที่เรือน… ⛵" />
 
   const floors: FloorInfo[] = rows.map((r) => ({
     id: r.person.id,
@@ -134,7 +135,7 @@ export function CatBuilding() {
           </button>
         </div>
         {/* ความหมายของโคม/เรือ */}
-        <div className="pointer-events-none absolute top-3 left-3 space-y-1 rounded-2xl bg-black/35 px-3 py-2 text-[11px] font-semibold text-white backdrop-blur-sm">
+        <div className="pointer-events-none absolute top-3 left-3 space-y-1 rounded-2xl bg-black/35 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm">
           <p className="flex items-center gap-1.5">
             <span className="size-2.5 rounded-full bg-[#ffb21f] shadow-[0_0_6px_#ffb21f]" /> ปกติ
           </p>

@@ -17,7 +17,7 @@ export function AppShell() {
       to={to}
       end={to === '/'}
       className={({ isActive }) =>
-        cx('relative flex flex-1 flex-col items-center gap-0.5 pt-2 text-[13px] font-semibold', isActive ? 'text-brand-600' : 'text-ink')
+        cx('relative flex flex-1 flex-col items-center gap-0.5 pt-2 text-[13px] font-semibold', isActive ? 'text-brand-700' : 'text-ink')
       }
     >
       {icon}
@@ -47,7 +47,7 @@ export function AppShell() {
           <NavLink
             to="/me"
             className={({ isActive }) =>
-              cx('flex flex-1 flex-col items-center gap-0.5 pt-2 text-[13px] font-semibold', isActive ? 'text-brand-600' : 'text-ink')
+              cx('flex flex-1 flex-col items-center gap-0.5 pt-2 text-[13px] font-semibold', isActive ? 'text-brand-700' : 'text-ink')
             }
           >
             {({ isActive }) => (

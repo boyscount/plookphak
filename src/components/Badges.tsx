@@ -40,8 +40,8 @@ export function BadgeRow({ stats }: { stats: MemberStats }) {
             <span className={cx('grid size-11 place-items-center rounded-full text-2xl', b.earned ? 'bg-gradient-to-br from-[#fff0b3] to-[#e9c766]' : 'bg-surface grayscale opacity-50')}>
               {b.icon}
             </span>
-            <span className={cx('mt-1.5 text-[11px] leading-tight font-semibold', !b.earned && 'text-muted')}>{b.label}</span>
-            {!b.earned && <span className="mt-0.5 text-[10px] leading-tight text-muted">🔒 {b.hint}</span>}
+            <span className={cx('mt-1.5 text-xs leading-tight font-semibold', !b.earned && 'text-muted')}>{b.label}</span>
+            {!b.earned && <span className="mt-0.5 text-xs leading-tight text-muted">🔒 {b.hint}</span>}
           </div>
         ))}
       </div>

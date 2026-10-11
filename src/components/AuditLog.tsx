@@ -4,7 +4,8 @@ import { useState } from 'react'
 import { ACTION_LABEL, ACTION_TONE, auditDetail, TABLE_LABEL, type AuditRow } from '../lib/auditFormat'
 import { useProfiles } from '../lib/queries'
 import { supabase } from '../lib/supabase'
-import { cx, EmptyState, Spinner } from './ui'
+import { cx, EmptyState } from './ui'
+import { RowsSkeleton } from './Skeleton'
 
 const PAGE = 30
 const dayFmt = new Intl.DateTimeFormat('th-TH', {
@@ -105,7 +106,7 @@ export function AuditLog() {
       </div>
 
       {isLoading ? (
-        <Spinner />
+        <RowsSkeleton count={6} />
       ) : !data?.rows.length ? (
         <EmptyState title="ไม่พบบันทึก" subtitle={filtered ? 'ลองเปลี่ยนตัวกรอง' : undefined} />
       ) : (
@@ -122,7 +123,7 @@ export function AuditLog() {
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-1.5">
                           <span className="font-semibold">{name(r.actor)}</span>
-                          <span className={cx('rounded-full px-2 py-0.5 text-[11px] font-bold', ACTION_TONE[r.action])}>
+                          <span className={cx('rounded-full px-2 py-0.5 text-xs font-bold', ACTION_TONE[r.action])}>
                             {ACTION_LABEL[r.action] ?? r.action}
                           </span>
                           <span className="text-sm">{TABLE_LABEL[r.table_name] ?? r.table_name}</span>

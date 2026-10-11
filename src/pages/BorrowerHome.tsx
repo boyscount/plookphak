@@ -9,12 +9,13 @@ import { memberStats, TIER_LABEL, tierOf } from '../lib/tier'
 import { LoanCard, StateBadge } from '../components/LoanCard'
 import { PaymentList } from '../components/Payments'
 import { SlipSheet } from '../components/SlipSheet'
-import { EmptyState, NotebookArt, Pill, Row, Spinner, Tabs, Card } from '../components/ui'
+import { EmptyState, NotebookArt, Pill, Row, Tabs, Card } from '../components/ui'
 import { ListIcon, SlipIcon } from '../components/icons'
 import { useAuth } from '../lib/auth'
 import { fmtBaht } from '../lib/format'
 import { loanSnapshot } from '../lib/loanMath'
 import { useLoans, useNow } from '../lib/queries'
+import { LoanCardSkeleton } from '../components/Skeleton'
 
 type Tab = 'now' | 'history' | 'all'
 
@@ -100,7 +101,7 @@ export function BorrowerHome({ initialTab = 'now' }: { initialTab?: Tab }) {
 
       <div className="mt-4 space-y-4 px-4 sm:px-6">
         {isLoading ? (
-          <Spinner />
+          <LoanCardSkeleton />
         ) : tab === 'now' ? (
           open.length ? (
             <div className="grid gap-4 lg:grid-cols-2">

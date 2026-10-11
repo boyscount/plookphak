@@ -5,7 +5,7 @@ import { AuditLog } from '../components/AuditLog'
 import { AVATARS, AvatarArt } from '../components/avatars'
 import { COVERS, CoverSwatch } from '../components/Cover'
 import { GearIcon, KeyIcon, LogoutIcon } from '../components/icons'
-import { Avatar, Card, cx, EmptyState, ErrorText, Field, Input, Pill, Sheet, Spinner, Tabs } from '../components/ui'
+import { Avatar, Card, cx, EmptyState, ErrorText, Field, Input, Pill, Sheet, Tabs } from '../components/ui'
 import { useAuth } from '../lib/auth'
 import { useTheme, type ThemePref } from '../lib/theme'
 import { inspectThaiQr, isValidPromptPayId } from '../lib/promptpay'
@@ -14,6 +14,7 @@ import { must, useProfiles, useSettings } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import { roleLabel } from '../lib/types'
 import { PasswordSheet, ToggleActive } from './BorrowerDetail'
+import { RowsSkeleton } from '../components/Skeleton'
 
 export function Me() {
   const { profile, isSuper, isStaff } = useAuth()
@@ -424,7 +425,7 @@ function AdminManager() {
       </Card>
 
       {isLoading ? (
-        <Spinner />
+        <RowsSkeleton count={3} />
       ) : !admins?.length ? (
         <EmptyState title="ยังไม่มี admin" />
       ) : (

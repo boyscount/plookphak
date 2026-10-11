@@ -5,7 +5,7 @@ import { BackIcon, CashIcon, KeyIcon, PlusIcon } from '../components/icons'
 import { LoanCard } from '../components/LoanCard'
 import { draftFromLoan, emptyLoanDraft, LoanFields, parseLoanDraft, type LoanDraft } from '../components/LoanForm'
 import { CashSheet, PaymentList } from '../components/Payments'
-import { Card, cx, EmptyState, ErrorText, Field, Input, Pill, Row, Sheet, Spinner, Tabs } from '../components/ui'
+import { Card, cx, EmptyState, ErrorText, Field, Input, Pill, Row, Sheet, Tabs } from '../components/ui'
 import { fmtBaht, fmtDateTime } from '../lib/format'
 import { loanSnapshot } from '../lib/loanMath'
 import { must, useLoans, useProfile, useRefreshMoney } from '../lib/queries'
@@ -15,6 +15,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { DayPicker } from '../components/DayPicker'
 import { BadgeRow, TierChip } from '../components/Badges'
 import { memberStats, tierOf } from '../lib/tier'
+import { LoanCardSkeleton, PageSkeleton } from '../components/Skeleton'
 
 export function BorrowerDetail() {
   const { id = '' } = useParams()
@@ -27,7 +28,7 @@ export function BorrowerDetail() {
   const [editProfile, setEditProfile] = useState(false)
   const [resetPw, setResetPw] = useState(false)
 
-  if (!person) return <Spinner />
+  if (!person) return <PageSkeleton />
   const all = loans ?? []
   const now = Date.now()
   const stats = memberStats(loans ?? [], now)
@@ -96,7 +97,7 @@ export function BorrowerDetail() {
 
       <div className="mt-4 space-y-4 px-4 sm:px-6">
         {isLoading ? (
-          <Spinner />
+          <LoanCardSkeleton />
         ) : tab === 'open' ? (
           <>
             {open.length ? (

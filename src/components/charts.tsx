@@ -90,7 +90,7 @@ export function ProgressRing({
       <div className="absolute inset-0 grid place-items-center text-center leading-tight">
         <div>
           <div className="tabular text-lg font-bold">{label ?? `${Math.round(value * 100)}%`}</div>
-          {sub && <div className="text-[11px] text-muted">{sub}</div>}
+          {sub && <div className="text-xs text-muted">{sub}</div>}
         </div>
       </div>
     </div>
@@ -204,12 +204,12 @@ export function DayStrip({ days }: { days: { date: string; status: DayStatus }[]
             title={`${new Date(d.date).getUTCDate()} · ${dayStyle[d.status].label}`}
             className={cx('flex aspect-square flex-col items-center justify-center rounded-xl text-xs font-bold', dayStyle[d.status].cls)}
           >
-            <span className="text-[10px] font-medium opacity-70">{new Date(d.date).getUTCDate()}</span>
+            <span className="text-[11px] font-medium opacity-70">{new Date(d.date).getUTCDate()}</span>
             {dayStyle[d.status].icon}
           </div>
         ))}
       </div>
-      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted">
+      <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
         {(['on_time', 'late', 'missed', 'today'] as DayStatus[]).map((k) => (
           <span key={k} className="flex items-center gap-1">
             <span className={cx('grid size-4 place-items-center rounded text-[10px] font-bold', dayStyle[k].cls)}>{dayStyle[k].icon}</span>
