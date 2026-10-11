@@ -21,6 +21,7 @@ export function errorText(e: unknown): string {
   const msg = typeof e === 'object' && 'message' in e ? String((e as { message: unknown }).message) : String(e)
   if (msg.includes('Invalid login credentials')) return 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
   if (msg.includes('User is banned')) return 'บัญชีนี้ถูกปิดใช้งาน'
+  if (msg.includes('payments_slip_ref_uniq')) return 'สลิปนี้เคยส่งเข้าระบบแล้ว ใช้ซ้ำไม่ได้'
   if (msg.includes('Failed to fetch')) return 'เชื่อมต่อไม่ได้ ตรวจอินเทอร์เน็ต'
   return msg
 }

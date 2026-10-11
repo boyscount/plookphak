@@ -1,8 +1,10 @@
 // ผู้ยืม: อัปสลิปแล้วกด "ส่ง" ให้ admin ตรวจ
 // รายการแบบจ่ายดอกรายวัน: เลือกก่อนว่า "จ่ายดอกรายวัน" หรือ "จ่ายพร้อมเงินต้น" แล้วไปคนละหน้า
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { fmtBaht, fmtDateTime } from '../lib/format'
 import { dailyPlan, loanSnapshot } from '../lib/loanMath'
+import { decodeQrImage } from '../lib/qrDecode'
+import { classifySlipQr, type SlipQr } from '../lib/slipQr'
 import { must, uploadSlip, useRefreshMoney } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import type { Loan } from '../lib/types'
@@ -95,6 +97,8 @@ export function SlipSheet({
   }, [open, initialLoanId])
   const [kind, setKind] = useState<PayKind | null>(null)
   const [file, setFile] = useState<File | null>(null)
+  const [qr, setQr] = useState<SlipQr | 'reading' | null>(null)
+  const pickToken = useRef(0)
   const [amount, setAmount] = useState('')
   const [through, setThrough] = useState<number | null>(null)
   const [note, setNote] = useState('')
@@ -108,6 +112,43 @@ export function SlipSheet({
   const isDaily = !!snap?.daily
   // รายการแบบพร้อมเงินต้นมีทางเดียว ข้ามหน้าเลือกไปเลย
   const step: PayKind | 'choose' = !isDaily ? 'principal' : (kind ?? 'choose')
+
+  // สลิปที่เคยส่งแล้ว (ไม่นับที่ถูกปฏิเสธ) — กันส่งรูปเดิมซ้ำ ฐานข้อมูลก็กันซ้ำอีกชั้น
+  const usedRefs = useMemo(
+    () => new Set(loans.flatMap((l) => l.payments).filter((p) => p.status !== 'rejected' && p.slip_ref).map((p) => p.slip_ref!)),
+    [loans],
+  )
+  const duplicate = typeof qr === 'object' && qr?.kind === 'slip' && usedRefs.has(qr.ref)
+  const wrongImage = typeof qr === 'object' && qr?.kind === 'promptpay'
+  const blocked = duplicate || wrongImage || qr === 'reading'
+
+  /** เลือกรูป → อ่าน QR ในเครื่องทันที (ไม่ส่งรูปไปไหนจนกดส่ง) */
+  function pickFile(f: File | null | undefined) {
+    if (f && !f.type.startsWith('image/')) return setError('เลือกได้เฉพาะไฟล์รูป')
+    const token = ++pickToken.current
+    setFile(f ?? null)
+    setError(null)
+    if (!f) return setQr(null)
+    setQr('reading')
+    decodeQrImage(f)
+      .then(classifySlipQr, () => ({ kind: 'none' }) as SlipQr)
+      .then((r) => token === pickToken.current && setQr(r))
+  }
+
+  // วางรูปจากคลิปบอร์ด (Ctrl+V / ⌘V) ตอนอยู่หน้าส่งสลิป
+  const canPick = open && !done && step !== 'choose'
+  useEffect(() => {
+    if (!canPick) return
+    const onPaste = (e: ClipboardEvent) => {
+      const img = [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/'))
+      if (img) {
+        e.preventDefault()
+        pickFile(img)
+      }
+    }
+    window.addEventListener('paste', onPaste)
+    return () => window.removeEventListener('paste', onPaste)
+  })
 
   function reset() {
     setKind(null)
@@ -132,11 +173,15 @@ export function SlipSheet({
     setError(null)
     try {
       const path = await uploadSlip(selected.id, file)
-      await must(
-        supabase
-          .from('payments')
-          .insert({ loan_id: selected.id, amount: Number(amount), method: 'transfer', slip_path: path, note: note || null }),
-      )
+      const row: Record<string, unknown> = { loan_id: selected.id, amount: Number(amount), method: 'transfer', slip_path: path, note: note || null }
+      const slipRef = typeof qr === 'object' && qr?.kind === 'slip' ? qr.ref : null
+      try {
+        await must(supabase.from('payments').insert(slipRef ? { ...row, slip_ref: slipRef } : row))
+      } catch (e) {
+        // ฐานข้อมูลยังไม่มีคอลัมน์ slip_ref (ยังไม่ได้รัน SQL) → ส่งแบบเดิมไปก่อน
+        if (!slipRef || !/slip_ref/.test(errorText(e)) || /uniq/.test(errorText(e))) throw e
+        await must(supabase.from('payments').insert(row))
+      }
       refresh()
       setDone(true)
     } catch (e) {
@@ -148,7 +193,7 @@ export function SlipSheet({
 
   function close() {
     reset()
-    setFile(null)
+    pickFile(null)
     setDone(false)
     onClose()
   }
@@ -163,18 +208,55 @@ export function SlipSheet({
           ? 'จ่ายพร้อมเงินต้น'
           : 'อัปสลิป'
 
+  const qrLine =
+    qr === 'reading' ? (
+      <p className="text-sm text-muted">🔍 กำลังตรวจสลิป…</p>
+    ) : duplicate ? (
+      <p className="rounded-2xl bg-danger/10 px-3 py-2 text-sm font-semibold text-danger">⛔ สลิปนี้เคยส่งเข้าระบบแล้ว เลือกสลิปใบใหม่</p>
+    ) : wrongImage ? (
+      <p className="rounded-2xl bg-danger/10 px-3 py-2 text-sm font-semibold text-danger">
+        ⛔ รูปนี้เป็น QR สำหรับรับเงิน ไม่ใช่สลิปโอน — โอนเสร็จแล้วเลือกรูปสลิปจากแอปธนาคาร
+      </p>
+    ) : qr?.kind === 'slip' ? (
+      <p className="text-sm font-semibold text-ok">✓ อ่าน QR บนสลิปได้</p>
+    ) : qr?.kind === 'none' ? (
+      <p className="text-sm text-muted">อ่าน QR บนสลิปไม่ได้ — ส่งได้ตามปกติ ผู้ดูแลจะตรวจจากรูป</p>
+    ) : null
+
   const slipPicker = (
-    <label className="block cursor-pointer">
-      <input type="file" accept="image/*" className="hidden" onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-      {preview ? (
-        <img src={preview} alt="ตัวอย่างสลิป" className="max-h-72 w-full rounded-2xl bg-pill object-contain" />
-      ) : (
-        <span className="flex h-32 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-400 bg-brand-50 text-brand-700">
-          <span className="text-3xl">🧾</span>
-          <span className="mt-1 font-semibold">แตะเพื่อเลือกรูปสลิป</span>
-        </span>
-      )}
-    </label>
+    <div className="space-y-2">
+      <label
+        className="block cursor-pointer"
+        onDragOver={(e) => e.preventDefault()}
+        onDrop={(e) => {
+          e.preventDefault()
+          pickFile(e.dataTransfer.files?.[0])
+        }}
+      >
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            pickFile(e.target.files?.[0])
+            e.target.value = ''
+          }}
+        />
+        {preview ? (
+          <span className="relative block">
+            <img src={preview} alt="ตัวอย่างสลิป" className="max-h-72 w-full rounded-2xl bg-pill object-contain" />
+            <span className="absolute right-2 bottom-2 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white">เปลี่ยนรูป</span>
+          </span>
+        ) : (
+          <span className="flex h-32 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-brand-400 bg-brand-50 text-brand-700">
+            <span className="text-3xl">🧾</span>
+            <span className="mt-1 font-semibold">แตะเพื่อเลือกรูปสลิป</span>
+            <span className="mt-0.5 hidden text-xs opacity-80 sm:block">หรือลากรูปมาวาง · วางด้วย Ctrl+V</span>
+          </span>
+        )}
+      </label>
+      {qrLine}
+    </div>
   )
 
   return (
@@ -291,7 +373,7 @@ export function SlipSheet({
           {step !== 'choose' && (
             <>
               <ErrorText error={error} />
-              <Pill tone="brand" className="w-full" disabled={busy || !file || !Number(amount)} onClick={send}>
+              <Pill tone="brand" className="w-full" disabled={busy || !file || !Number(amount) || blocked} onClick={send}>
                 {busy ? 'กำลังส่ง…' : 'ส่งให้ผู้ดูแลตรวจ'}
               </Pill>
             </>

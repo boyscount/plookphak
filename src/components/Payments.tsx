@@ -105,6 +105,11 @@ function PaymentSheet({ payment, canReview, onClose }: { payment: Payment; canRe
         <p className="text-muted">
           ส่งเมื่อ {fmtDateTime(payment.paid_at)} · สถานะ <b>{statusText[payment.status].t}</b>
         </p>
+        {canReview && payment.method === 'transfer' && payment.status === 'pending' && (
+          <p className={payment.slip_ref ? 'text-sm font-semibold text-ok' : 'text-sm text-muted'}>
+            {payment.slip_ref ? '✓ อ่าน QR บนสลิปได้ และไม่ซ้ำกับสลิปที่เคยส่ง' : '⚠ อ่าน QR บนสลิปไม่ได้ ตรวจยอดและชื่อบัญชีจากรูปอีกครั้ง'}
+          </p>
+        )}
         {payment.reject_reason && <p className="text-danger">เหตุผล: {payment.reject_reason}</p>}
         {payment.note && <p className="text-muted">📝 {payment.note}</p>}
 

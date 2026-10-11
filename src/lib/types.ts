@@ -18,6 +18,8 @@ export type Payment = {
   amount: number
   method: 'transfer' | 'cash'
   slip_path: string | null
+  /** ข้อความใน QR ของสลิป ใช้กันสลิปซ้ำ */
+  slip_ref?: string | null
   paid_at: string
   status: 'pending' | 'approved' | 'rejected'
   note: string | null
