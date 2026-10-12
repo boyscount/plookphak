@@ -134,23 +134,24 @@ export function CatBuilding() {
             ▼
           </button>
         </div>
-        {/* ความหมายของโคม/เรือ */}
-        <div className="pointer-events-none absolute top-3 left-3 space-y-1 rounded-2xl bg-black/35 px-3 py-2 text-xs font-semibold text-white backdrop-blur-sm">
-          <p className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-[#ffb21f] shadow-[0_0_6px_#ffb21f]" /> ปกติ
-          </p>
-          <p className="flex items-center gap-1.5">
-            <span className="size-2.5 animate-pulse rounded-full bg-[#ff3b4a] shadow-[0_0_6px_#ff3b4a]" /> ค้างจ่าย
-          </p>
-          <p className="flex items-center gap-1.5">
-            <span className="size-2.5 rounded-full bg-[#4a4038] ring-1 ring-white/40" /> ปิดยอดแล้ว
-          </p>
-          <p>⛵ เรือจอด = มีสลิปรอตรวจ</p>
-        </div>
         <p className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-black/50 px-3 py-1 text-xs font-semibold text-white backdrop-blur-sm">
           ลากเพื่อหมุน · แตะห้องเพื่อดูรายละเอียด
         </p>
       </div>
+
+      {/* ความหมายของโคม/เรือ — อยู่นอกฉาก ไม่บังตัวเรือน */}
+      <ul className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 px-1 text-xs font-semibold text-muted" aria-label="ความหมายของสัญลักษณ์">
+        <li className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-[#ffb21f] shadow-[0_0_6px_#ffb21f]" /> ปกติ
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="size-2.5 animate-pulse rounded-full bg-[#ff3b4a] shadow-[0_0_6px_#ff3b4a]" /> ค้างจ่าย
+        </li>
+        <li className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-full bg-[#4a4038] ring-1 ring-muted/40" /> ปิดยอดแล้ว
+        </li>
+        <li>⛵ เรือจอด = มีสลิปรอตรวจ</li>
+      </ul>
 
       {/* สรุปห้องที่เลือก */}
       {sel && (
