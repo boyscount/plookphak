@@ -1,6 +1,6 @@
 // ฉากหน้า login: เรือนญี่ปุ่นกลางทะเลสาบ ซ้อนเป็นชั้น (parallax) — ภูเขา, หมอก, เรือน, กิ่งซากุระ, กลีบร่วง
 // กลางวัน/กลางคืนตามเวลาไทย · เอียงมือถือหรือขยับเมาส์แล้วชั้นต่าง ๆ เลื่อนเหลื่อมกัน
-import { useEffect, useRef, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Petals } from './SakuraTree'
 
 function isNightBkk() {
@@ -65,10 +65,36 @@ const LEFT_BLOSSOMS: [number, number, number][] = [
 ]
 const RIGHT_BLOSSOMS: [number, number, number][] = LEFT_BLOSSOMS.map(([x, y, r]) => [400 - x, y + 6, r])
 
+/**
+ * สันเขาที่ยาวได้ไม่จำกัด (จอกว้างแค่ไหนก็มีภูเขา) — ใช้รูปเดิมช่วง 0–400 แล้วต่อซ้ำออกไปสองข้าง
+ * pts คือจุดยอด/หุบภายในช่วง 0–400
+ */
+function ridge(pts: [number, number][], left: number, right: number, bottom: number) {
+  const out: [number, number][] = []
+  for (let k = Math.floor(left / 400) - 1; k <= Math.ceil(right / 400); k++) for (const [x, y] of pts) out.push([x + k * 400, y])
+  const seg = out.filter(([x]) => x >= left - 80 && x <= right + 80)
+  return `M${seg[0][0]} ${bottom} ${seg.map(([x, y]) => `L${x} ${y}`).join(' ')} L${seg.at(-1)![0]} ${bottom} Z`
+}
+const FAR: [number, number][] = [[0, 150], [40, 120], [90, 150], [150, 100], [210, 140], [270, 96], [330, 136], [380, 118]]
+const MID: [number, number][] = [[0, 178], [60, 145], [120, 172], [190, 135], [250, 168], [320, 140], [370, 165]]
+
 export function LoginScene({ children }: { children?: ReactNode }) {
   const night = isNightBkk()
   const c = night ? NIGHT : DAY
   const root = useRef<HTMLDivElement>(null)
+  // ความกว้างของฉากในหน่วย viewBox ตามสัดส่วนจอ: ความสูงพอดี 300 เสมอ เรือนอยู่กลาง ไม่ถูกตัดหัวบนจอกว้าง
+  const [span, setSpan] = useState(400)
+  useEffect(() => {
+    const el = root.current
+    if (!el) return
+    const fit = () => el.clientHeight && setSpan(Math.round((300 * el.clientWidth) / el.clientHeight))
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  const left = 200 - span / 2
+  const right = 200 + span / 2
 
   useEffect(() => {
     const el = root.current
@@ -100,7 +126,7 @@ export function LoginScene({ children }: { children?: ReactNode }) {
 
   return (
     <div ref={root} className="pt-safe relative h-[25rem] overflow-hidden">
-      <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMax slice" className="absolute inset-0 h-full w-full" aria-hidden>
+      <svg viewBox={`${left} 0 ${span} 300`} preserveAspectRatio="xMidYMax slice" className="absolute inset-0 h-full w-full" aria-hidden>
         <defs>
           <linearGradient id="ls-sky" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0" stopColor={c.sky[0]} />
@@ -119,26 +145,29 @@ export function LoginScene({ children }: { children?: ReactNode }) {
           </filter>
         </defs>
 
-        <rect width="400" height="300" fill="url(#ls-sky)" />
+        <rect x={left} width={span} height="300" fill="url(#ls-sky)" />
         {night &&
-          Array.from({ length: 30 }, (_, i) => (
-            <circle key={i} className="cover-star" cx={(i * 53) % 400} cy={(i * 29) % 120} r={i % 4 ? 0.8 : 1.4} fill="#fff" style={{ animationDelay: `${(i % 7) * 0.4}s` }} />
+          Array.from({ length: Math.ceil((30 * span) / 400) }, (_, i) => (
+            <circle key={i} className="cover-star" cx={left + ((i * 53) % span)} cy={(i * 29) % 120} r={i % 4 ? 0.8 : 1.4} fill="#fff" style={{ animationDelay: `${(i % 7) * 0.4}s` }} />
           ))}
         {night && <circle cx="320" cy="50" r="14" fill="#fff4d6" opacity=".9" />}
 
         <Layer depth={2}>
-          <path d="M-20 170 L40 120 L90 150 L150 100 L210 140 L270 96 L330 136 L420 110 L420 200 L-20 200 Z" fill={c.far} />
+          <path d={ridge(FAR, left, right, 200)} fill={c.far} />
         </Layer>
         <Layer depth={4}>
-          <path d="M-20 185 L60 145 L120 172 L190 135 L250 168 L320 140 L420 170 L420 210 L-20 210 Z" fill={c.mid} />
-          <rect x="-20" y="160" width="440" height="40" fill={c.mist} filter="url(#ls-blur)" />
+          <path d={ridge(MID, left, right, 210)} fill={c.mid} />
+          <rect x={left - 40} y="160" width={span + 80} height="40" fill={c.mist} filter="url(#ls-blur)" />
         </Layer>
 
         {/* ทะเลสาบ */}
-        <rect y="196" width="400" height="104" fill="url(#ls-lake)" />
-        {[212, 228, 246, 266, 286].map((y, i) => (
-          <path key={y} className="lake-shimmer" d={`M${20 + i * 30} ${y} h${60 - i * 4} M${240 - i * 20} ${y + 6} h${50}`} stroke={night ? 'rgba(255,214,140,.25)' : 'rgba(255,255,255,.5)'} strokeWidth="1.4" strokeLinecap="round" style={{ animationDelay: `${i * 0.6}s` }} />
-        ))}
+        <rect x={left} y="196" width={span} height="104" fill="url(#ls-lake)" />
+        {/* ประกายน้ำ ต่อซ้ำทุกช่วง 400 ให้เต็มจอกว้าง */}
+        {[212, 228, 246, 266, 286].flatMap((y, i) =>
+          Array.from({ length: Math.ceil(right / 400) - Math.floor(left / 400) }, (_, j) => (Math.floor(left / 400) + j) * 400).map((ox) => (
+          <path key={`${y}-${ox}`} className="lake-shimmer" d={`M${ox + 20 + i * 30} ${y} h${60 - i * 4} M${ox + 240 - i * 20} ${y + 6} h${50}`} stroke={night ? 'rgba(255,214,140,.25)' : 'rgba(255,255,255,.5)'} strokeWidth="1.4" strokeLinecap="round" style={{ animationDelay: `${i * 0.6}s` }} />
+          )),
+        )}
 
         {/* เรือนน้ำชา */}
         <Layer depth={7}>
@@ -175,10 +204,15 @@ export function LoginScene({ children }: { children?: ReactNode }) {
 
         {/* กิ่งซากุระหน้าสุด */}
         <Layer depth={12}>
+          {/* กิ่งซ้ายชิดขอบซ้าย กิ่งขวาชิดขอบขวา ไม่ว่าจอจะกว้างแค่ไหน */}
+          <g transform={`translate(${left} 0)`}>
           <path d="M-10 120 C30 90 60 70 100 56 M10 70 C30 50 50 40 70 30" stroke={c.branch} strokeWidth="5" fill="none" strokeLinecap="round" />
           <Blossoms points={LEFT_BLOSSOMS} colors={c.blossom} />
+          </g>
+          <g transform={`translate(${right - 400} 0)`}>
           <path d="M410 126 C370 96 340 76 300 62 M390 76 C370 56 350 46 330 36" stroke={c.branch} strokeWidth="5" fill="none" strokeLinecap="round" />
           <Blossoms points={RIGHT_BLOSSOMS} colors={c.blossom} />
+          </g>
         </Layer>
       </svg>
       <Petals count={12} className="absolute inset-0" short />
