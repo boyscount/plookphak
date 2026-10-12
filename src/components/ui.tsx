@@ -253,7 +253,7 @@ export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
 }
 
 export function Card({ className, children }: { className?: string; children: ReactNode }) {
-  return <div className={cx('rounded-3xl bg-surface p-4 shadow-[0_1px_0_#0000000d] sm:p-5', className)}>{children}</div>
+  return <div className={cx('card-depth rounded-3xl p-4 sm:p-5', className)}>{children}</div>
 }
 
 export function ErrorText({ error }: { error?: string | null }) {

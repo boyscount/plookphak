@@ -12,6 +12,13 @@ export const MONEY_COLORS = {
   penalty: 'var(--money-penalty)', // ค่าปรับ
 }
 
+/** สีตัวเลข/เส้นเรืองแสง (สว่างกว่าในโหมดมืด, เข้มกว่าในโหมดสว่าง — อ่านได้ทั้งคู่) */
+export const MONEY_INK = {
+  principal: 'var(--money-principal-ink)',
+  interest: 'var(--money-interest-ink)',
+  penalty: 'var(--money-penalty-ink)',
+}
+
 /** ตัวเลขวิ่งขึ้นตอนเปิดหน้า แล้วตามค่าจริงแบบนุ่ม ๆ */
 export function useCountUp(target: number, ms = 900) {
   const [v, setV] = useState(0)
@@ -114,8 +121,8 @@ export function StackedBar({ segments, height = 14 }: { segments: Segment[]; hei
               title={`${s.label} ${fmtBaht(s.value)}`}
               onMouseEnter={() => setHover(s.key)}
               onMouseLeave={() => setHover(null)}
-              className="h-full transition-[flex-grow,opacity] duration-700 first:rounded-l-full last:rounded-r-full"
-              style={{ flexGrow: s.value, flexBasis: 0, background: s.color, opacity: hover && hover !== s.key ? 0.35 : 1 }}
+              className="glow-bar h-full transition-[flex-grow,opacity] duration-700 first:rounded-l-full last:rounded-r-full"
+              style={{ flexGrow: s.value, flexBasis: 0, '--bar': s.color, opacity: hover && hover !== s.key ? 0.35 : 1 } as React.CSSProperties}
             />
           ))}
       </div>
@@ -161,11 +168,143 @@ export function RankBars({
               <span className="tabular shrink-0 font-semibold">{fmtBaht(r.value)}</span>
             </div>
             <div className="mt-1 h-2.5 overflow-hidden rounded-full bg-pill">
-              <div className="h-full rounded-full transition-[width] duration-700" style={{ width: `${(r.value / max) * 100}%`, background: color }} />
+              <div className="glow-bar h-full rounded-full transition-[width] duration-700" style={{ width: `${(r.value / max) * 100}%`, '--bar': color } as React.CSSProperties} />
             </div>
           </button>
         </li>
       ))}
+    </ul>
+  )
+}
+
+type Part = { key: string; label: string; value: number; color: string }
+
+/**
+ * วงแหวนนีออนซ้อนกัน: แต่ละวงยาวตามสัดส่วนของยอดรวม (ไม่ใช่ pie) + ตัวเลขกำกับครบในป้ายข้าง ๆ
+ * ตรงกลางคือยอดรวม
+ */
+export function NeonRings({ parts, size = 216 }: { parts: Part[]; size?: number }) {
+  const total = parts.reduce((s, p) => s + Math.max(0, p.value), 0)
+  const stroke = 9
+  const gap = 15
+  const c = size / 2
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={parts.map((p) => `${p.label} ${fmtBaht(p.value)}`).join(', ')}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90 overflow-visible">
+        <defs>
+          <filter id="neon-blur" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="5" />
+          </filter>
+        </defs>
+        {parts.map((p, i) => {
+          const r = c - stroke / 2 - 4 - i * (stroke + gap)
+          const len = 2 * Math.PI * r
+          const share = total > 0 ? Math.max(0, p.value) / total : 0
+          const dash = Math.max(share > 0 ? 0.012 : 0, share) * len
+          const arc = {
+            cx: c,
+            cy: c,
+            r,
+            fill: 'none',
+            stroke: p.color,
+            strokeWidth: stroke,
+            strokeLinecap: 'round' as const,
+            strokeDasharray: `${dash} ${len}`,
+          }
+          return (
+            <g key={p.key}>
+              <circle cx={c} cy={c} r={r} fill="none" stroke={p.color} strokeOpacity={0.13} strokeWidth={stroke} />
+              {share > 0 && (
+                <>
+                  {/* เงาเรือง (เบลอ) ใต้เส้นจริง */}
+                  <circle {...arc} className="neon-arc" style={{ '--len': `${dash}` } as React.CSSProperties} strokeOpacity={0.75} filter="url(#neon-blur)" />
+                  <circle {...arc} className="neon-arc" style={{ '--len': `${dash}` } as React.CSSProperties} />
+                </>
+              )}
+            </g>
+          )
+        })}
+      </svg>
+      <div className="absolute inset-0 grid place-items-center text-center">
+        <div>
+          <div className="text-xs text-muted">รวม</div>
+          <CountUpBaht value={total} className="block text-[15px] font-bold" />
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** ป้ายตัวเลขแบบกระจก: จุดสี · ชื่อ · % และยอดตัวใหญ่สีเดียวกับวง */
+export function BreakdownTiles({ parts }: { parts: (Part & { ink: string })[] }) {
+  const total = parts.reduce((s, p) => s + Math.max(0, p.value), 0)
+  return (
+    <ul className="grid w-full min-w-0 flex-1 gap-2.5">
+      {parts.map((p) => (
+        <li key={p.key} className="glass-tile rounded-2xl px-4 py-2.5" style={{ '--bar': p.color } as React.CSSProperties}>
+          <span className="flex items-center gap-1.5 text-sm text-muted">
+            <span className="glow-dot size-2.5 rounded-full" style={{ background: p.color, color: p.color }} />
+            {p.label} · {total > 0 ? Math.round((p.value / total) * 100) : 0}%
+          </span>
+          <span className="glow-text block" style={{ color: p.ink }}>
+            <CountUpBaht value={p.value} className="text-2xl leading-tight font-bold" />
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+/** อันดับแบบการ์ดกระจก: รูป · ชื่อ · ยอด · แถบเรืองแสงมีหัวกลม */
+export function GlowRankList({
+  rows,
+  color = 'var(--money-principal-ink)',
+  onPick,
+}: {
+  rows: { key: string; avatar: React.ReactNode; name: string; value: number; hint?: string }[]
+  color?: string
+  onPick?: (key: string) => void
+}) {
+  const max = Math.max(1, ...rows.map((r) => r.value))
+  const [shown, setShown] = useState(false)
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setShown(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+  return (
+    <ul className="space-y-2.5">
+      {rows.map((r) => {
+        const pct = shown ? Math.max(4, (r.value / max) * 100) : 0
+        return (
+          <li key={r.key}>
+            <button
+              type="button"
+              onClick={() => onPick?.(r.key)}
+              className="glass-tile flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition active:scale-[.99]"
+              style={{ '--bar': color } as React.CSSProperties}
+            >
+              {r.avatar}
+              <span className="min-w-0 flex-1">
+                <span className="flex items-baseline justify-between gap-2">
+                  <span className="truncate text-[17px] font-bold">{r.name}</span>
+                  <span className="tabular shrink-0 font-bold">{fmtBaht(r.value)}</span>
+                </span>
+                {r.hint && <span className="block truncate text-xs text-muted">{r.hint}</span>}
+                <span className="relative mt-2 block h-1.5 rounded-full bg-pill">
+                  <span
+                    className="glow-bar absolute inset-y-0 left-0 rounded-full transition-[width] duration-1000 ease-out"
+                    style={{ width: `${pct}%` }}
+                  />
+                  <span
+                    className="glow-knob absolute top-1/2 size-3 -translate-x-1/2 -translate-y-1/2 rounded-full transition-[left] duration-1000 ease-out"
+                    style={{ left: `${pct}%` }}
+                  />
+                </span>
+              </span>
+            </button>
+          </li>
+        )
+      })}
     </ul>
   )
 }

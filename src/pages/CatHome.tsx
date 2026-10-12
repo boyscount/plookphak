@@ -31,7 +31,7 @@ function StatBar({ icon, label, value, color }: { icon: string; label: string; v
       <span className="w-5 text-center">{icon}</span>
       <span className="w-16 shrink-0 text-muted">{label}</span>
       <span className="h-2.5 flex-1 overflow-hidden rounded-full bg-pill">
-        <span className="block h-full rounded-full transition-[width] duration-700" style={{ width: `${value}%`, background: color }} />
+        <span className="glow-bar block h-full rounded-full transition-[width] duration-700" style={{ width: `${value}%`, '--bar': color } as React.CSSProperties} />
       </span>
       <span className="tabular w-8 text-right font-semibold">{value}</span>
     </div>
@@ -70,7 +70,7 @@ export function CatHome() {
       </div>
 
       {/* การ์ดค่าพลัง */}
-      <div className="mt-4 rounded-3xl bg-surface p-4">
+      <div className="mt-4 rounded-3xl card-depth p-4">
         <div className="flex items-center gap-3">
           <Avatar name={owner.aka} avatar={owner.avatar} size="sm" />
           <div className="min-w-0 flex-1">

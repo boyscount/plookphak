@@ -114,7 +114,7 @@ export function AuditLog() {
           {groups.map((g) => (
             <section key={g.day}>
               <h4 className="mb-2 px-1 text-sm font-bold text-muted">{g.day}</h4>
-              <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface">
+              <ul className="divide-y divide-line overflow-hidden rounded-2xl card-depth">
                 {g.rows.map((r) => {
                   const detail = auditDetail(r)
                   return (
@@ -140,7 +140,7 @@ export function AuditLog() {
       )}
 
       {total > PAGE && (
-        <nav className="flex items-center justify-between gap-2 rounded-2xl bg-surface p-2" aria-label="แบ่งหน้า">
+        <nav className="flex items-center justify-between gap-2 rounded-2xl card-depth p-2" aria-label="แบ่งหน้า">
           <div className="flex gap-1">
             <button
               type="button"

@@ -29,7 +29,7 @@ export function PaymentList({ payments, title }: { payments: (Payment & { aka?: 
           <li key={p.id}>
             <button
               onClick={() => setViewing(p)}
-              className="flex w-full items-center gap-3 rounded-2xl bg-surface p-3.5 text-left active:bg-pill"
+              className="flex w-full items-center gap-3 rounded-2xl card-depth p-3.5 text-left active:bg-pill"
             >
               <span className="grid size-11 shrink-0 place-items-center rounded-full bg-brand-50 text-xl">
                 {p.method === 'cash' ? '💵' : '🧾'}

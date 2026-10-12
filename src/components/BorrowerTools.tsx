@@ -305,7 +305,7 @@ export function RequestReviewList({ names }: { names: Record<string, string> }) 
     <div className="space-y-2">
       <ErrorText error={error} />
       {requests.map((r) => (
-        <div key={r.id} className="rounded-2xl bg-surface p-4">
+        <div key={r.id} className="rounded-2xl card-depth p-4">
           <div className="flex items-center justify-between gap-2">
             <span className="font-bold">{names[r.borrower_id] ?? 'ผู้ยืม'}</span>
             <span className={cx('rounded-full px-2 py-0.5 text-xs font-semibold', statusChip[r.status].c)}>{statusChip[r.status].t}</span>

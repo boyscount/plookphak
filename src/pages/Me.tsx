@@ -235,7 +235,7 @@ function PromptPaySettings() {
 function ThemeSwitch() {
   const [pref, setPref] = useTheme()
   return (
-    <div className="flex items-center justify-between gap-3 rounded-3xl bg-surface p-3 pl-4">
+    <div className="flex items-center justify-between gap-3 rounded-3xl card-depth p-3 pl-4">
       <span className="font-semibold">ธีมแอป</span>
       <div className="flex gap-1 rounded-full bg-pill p-1" role="radiogroup" aria-label="ธีมแอป">
         {THEME_OPTIONS.map((o) => (

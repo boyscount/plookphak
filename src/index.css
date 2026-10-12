@@ -32,6 +32,16 @@
   --money-principal: #7432ea;
   --money-interest: #1baf7a;
   --money-penalty: #eb6834;
+  /* ตัวเลข/เส้นเรืองแสงของแต่ละประเภทเงิน (อ่านได้บนพื้นการ์ด ≥ 4.5:1) */
+  --money-principal-ink: #6a2bd9;
+  --money-interest-ink: #0b7f55;
+  --money-penalty-ink: #c2410c;
+  /* การ์ดมีมิติ: ไล่เฉด + ขอบไฮไลต์ + เงา */
+  --card-bg: linear-gradient(165deg, #ffffff 0%, #fbf9ff 100%);
+  --card-edge: #0000000a;
+  --card-shadow: 0 1px 0 #0000000d, 0 10px 28px -18px #2a125240;
+  --glow-pct: 35%;
+  --page-bg: none;
 }
 
 /* ---------------------------------------------------------------------------
@@ -67,6 +77,14 @@
   --money-principal: #9a6bff;
   --money-interest: #199e70;
   --money-penalty: #d95926;
+  --money-principal-ink: #b393ff;
+  --money-interest-ink: #3ddc9f;
+  --money-penalty-ink: #ff8a5c;
+  --card-bg: linear-gradient(165deg, #231d33 0%, #1a1626 55%, #15121e 100%);
+  --card-edge: #ffffff12;
+  --card-shadow: inset 0 1px 0 #ffffff0d, 0 18px 40px -20px #000000cc, 0 0 0 1px #9a6bff0a, 0 0 32px -12px #7432ea33;
+  --glow-pct: 80%;
+  --page-bg: radial-gradient(900px 520px at 85% -8%, #3b2370aa, transparent 70%), radial-gradient(700px 480px at -10% 35%, #1d2a5a66, transparent 70%), linear-gradient(180deg, #120f1b 0%, #0c0a12 60%, #09080e 100%);
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
@@ -98,6 +116,14 @@
     --money-principal: #9a6bff;
     --money-interest: #199e70;
     --money-penalty: #d95926;
+  --money-principal-ink: #b393ff;
+  --money-interest-ink: #3ddc9f;
+  --money-penalty-ink: #ff8a5c;
+  --card-bg: linear-gradient(165deg, #231d33 0%, #1a1626 55%, #15121e 100%);
+  --card-edge: #ffffff12;
+  --card-shadow: inset 0 1px 0 #ffffff0d, 0 18px 40px -20px #000000cc, 0 0 0 1px #9a6bff0a, 0 0 32px -12px #7432ea33;
+  --glow-pct: 80%;
+  --page-bg: radial-gradient(900px 520px at 85% -8%, #3b2370aa, transparent 70%), radial-gradient(700px 480px at -10% 35%, #1d2a5a66, transparent 70%), linear-gradient(180deg, #120f1b 0%, #0c0a12 60%, #09080e 100%);
   }
 }
 
@@ -106,6 +132,10 @@ body {
   /* บัตรหมุน 3 มิติยื่นเกินขอบได้ — ห้ามทำให้หน้าเลื่อนข้าง */
   overflow-x: clip;
   background: var(--color-canvas);
+}
+body {
+  /* โหมดมืดไล่เฉดม่วง-กรมท่าเบา ๆ ให้การ์ดลอยมีมิติ (โหมดสว่างเป็นสีพื้นเดิม) */
+  background: var(--page-bg) var(--color-canvas);
   color: var(--color-ink);
   -webkit-tap-highlight-color: transparent;
 }
@@ -844,6 +874,57 @@ input::-webkit-date-and-time-value {
 }
 @media (prefers-reduced-motion: reduce) {
   .skel {
+    animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   มิติ + แสงเรือง (Visual depth)
+   --------------------------------------------------------------------------- */
+.card-depth {
+  background: var(--card-bg);
+  box-shadow: var(--card-shadow);
+  outline: 1px solid var(--card-edge);
+  outline-offset: -1px;
+}
+
+/* แถบความคืบหน้าเรืองแสงตามสีของตัวเอง: ใส่ --bar เป็นสี */
+.glow-bar {
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bar) 70%, transparent), var(--bar));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--bar) var(--glow-pct), transparent);
+}
+.glow-knob {
+  background: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--bar) 55%, transparent), 0 0 14px var(--bar);
+}
+.glow-dot {
+  box-shadow: 0 0 10px color-mix(in srgb, currentColor var(--glow-pct), transparent);
+}
+.glow-text {
+  text-shadow: 0 0 18px color-mix(in srgb, currentColor calc(var(--glow-pct) - 30%), transparent);
+}
+
+/* กล่องกระจกเล็ก ๆ ในการ์ด (ป้ายตัวเลข/แถวอันดับ) */
+.glass-tile {
+  background: linear-gradient(160deg, color-mix(in srgb, var(--color-surface) 70%, #ffffff 6%), color-mix(in srgb, var(--color-canvas) 60%, transparent));
+  outline: 1px solid var(--card-edge);
+  outline-offset: -1px;
+  box-shadow: inset 0 1px 0 #ffffff0f, 0 8px 20px -14px #00000080;
+}
+.glass-tile:hover {
+  outline-color: color-mix(in srgb, var(--bar, var(--color-brand-500)) 45%, transparent);
+}
+
+@keyframes neon-in {
+  from {
+    stroke-dashoffset: var(--len);
+  }
+}
+.neon-arc {
+  animation: neon-in 1.1s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .neon-arc {
     animation: none;
   }
 }

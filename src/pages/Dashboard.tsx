@@ -8,7 +8,7 @@ import { StateBadge } from '../components/LoanCard'
 import { AvatarArt, avatarById } from '../components/avatars'
 import { Avatar, Card, cx, EmptyState, Input, Pill, Tabs } from '../components/ui'
 import { PlusIcon } from '../components/icons'
-import { CountUpBaht, MONEY_COLORS, ProgressRing, RankBars, StackedBar } from '../components/charts'
+import { BreakdownTiles, CountUpBaht, GlowRankList, MONEY_INK, NeonRings, ProgressRing } from '../components/charts'
 import { useAuth } from '../lib/auth'
 import { memberStats, tierOf, type Tier } from '../lib/tier'
 import { fmtBaht, fmtDateTime } from '../lib/format'
@@ -71,7 +71,7 @@ function Stat({ label, value, tone, onClick }: { label: string; value: React.Rea
     </>
   )
   return onClick ? (
-    <button type="button" onClick={onClick} className="rise-in rounded-3xl bg-surface p-4 text-left active:scale-[.98]">
+    <button type="button" onClick={onClick} className="rise-in rounded-3xl card-depth p-4 text-left active:scale-[.98]">
       {body}
     </button>
   ) : (
@@ -82,7 +82,7 @@ function Stat({ label, value, tone, onClick }: { label: string; value: React.Rea
 export function BorrowerRow({ r }: { r: ReturnType<typeof useBorrowerRows>['rows'][number] }) {
   const presence = usePresence()
   return (
-    <Link to={`/borrowers/${r.person.id}`} className="flex min-w-0 items-center gap-3 rounded-2xl bg-surface p-3.5 active:bg-pill">
+    <Link to={`/borrowers/${r.person.id}`} className="flex min-w-0 items-center gap-3 rounded-2xl card-depth p-3.5 active:bg-pill">
       <Avatar name={r.person.aka} avatar={r.person.avatar} size="sm" presence={presenceState(presence.get(r.person.id))} />
       <span className="min-w-0 flex-1">
         <span className="flex items-baseline justify-between gap-2">
@@ -110,6 +110,7 @@ export function Dashboard() {
   const { profile } = useAuth()
   const navigate = useNavigate()
   const { rows, loans, isLoading, now } = useBorrowerRows()
+  const presence = usePresence()
   type DashTab = 'attention' | 'slips' | 'requests' | 'all'
   // เปิดแท็บตามลิงก์ได้ เช่น /?tab=slips (จากเรือที่เทียบท่าในเรือนน้ำชา)
   const [params] = useSearchParams()
@@ -187,38 +188,62 @@ export function Dashboard() {
           <Stat label="สลิปรอตรวจ" value={`${pending.length} ใบ`} tone={pending.length ? 'text-brand-700' : ''} onClick={() => setTab('slips')} />
         </div>
 
-        <div className="grid gap-3">
+        <div className="grid gap-3 lg:grid-cols-2">
           <Card className="rise-in">
-            <h3 className="font-bold">ยอดรวมแยกประเภท</h3>
-            <p className="mb-4 text-sm text-muted">ของรายการที่ยังเปิดอยู่ ก่อนหักที่จ่ายแล้ว</p>
-            <StackedBar
-              segments={[
-                { key: 'p', label: 'เงินต้น', value: breakdown.principal, color: MONEY_COLORS.principal },
-                { key: 'i', label: 'ดอกเบี้ย', value: breakdown.interest, color: MONEY_COLORS.interest },
-                { key: 'f', label: 'ค่าปรับ', value: breakdown.penalty, color: MONEY_COLORS.penalty },
-              ]}
-            />
+            <h3 className="text-xl font-bold">ยอดรวมแยกประเภท</h3>
+            <p className="text-sm text-muted">ของรายการที่ยังเปิดอยู่ ก่อนหักที่จ่ายแล้ว</p>
+            <div className="mt-4 flex flex-col items-center gap-4 min-[420px]:flex-row min-[420px]:items-center">
+              <NeonRings
+                size={200}
+                parts={[
+                  { key: 'p', label: 'เงินต้น', value: breakdown.principal, color: MONEY_INK.principal },
+                  { key: 'i', label: 'ดอกเบี้ย', value: breakdown.interest, color: MONEY_INK.interest },
+                  { key: 'f', label: 'ค่าปรับ', value: breakdown.penalty, color: MONEY_INK.penalty },
+                ]}
+              />
+              <BreakdownTiles
+                parts={[
+                  { key: 'p', label: 'เงินต้น', value: breakdown.principal, color: MONEY_INK.principal, ink: MONEY_INK.principal },
+                  { key: 'i', label: 'ดอกเบี้ย', value: breakdown.interest, color: MONEY_INK.interest, ink: MONEY_INK.interest },
+                  { key: 'f', label: 'ค่าปรับ', value: breakdown.penalty, color: MONEY_INK.penalty, ink: MONEY_INK.penalty },
+                ]}
+              />
+            </div>
           </Card>
-        </div>
 
-        {top.length > 0 && (
-          <Card className="rise-in">
-            <h3 className="mb-3 font-bold">ค้างมากที่สุด</h3>
-            <RankBars
-              rows={top.map((r) => ({
-                key: r.person.id,
-                value: r.balance,
-                label: (
-                  <span className="flex items-center gap-2">
-                    <Avatar name={r.person.aka} avatar={r.person.avatar} size="xs" />
-                    {r.person.aka}
-                  </span>
-                ),
-              }))}
-              onPick={(id) => navigate(`/borrowers/${id}`)}
-            />
-          </Card>
-        )}
+          {top.length > 0 && (
+            <Card className="rise-in">
+              <div className="mb-3 flex items-center justify-between">
+                <h3 className="text-xl font-bold">ค้างมากที่สุด</h3>
+                <div className="flex gap-1">
+                  <button type="button" onClick={openPalette} className="grid size-10 place-items-center rounded-full text-lg hover:bg-pill" aria-label="ค้นหาผู้ยืม">
+                    🔍
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/browse')}
+                    className="grid size-10 place-items-center rounded-full hover:bg-pill"
+                    aria-label="ดูผู้ยืมทั้งหมดและตัวกรอง"
+                  >
+                    <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+                      <path d="M3 4h18l-7 8.5V19l-4 2v-8.5z" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <GlowRankList
+                rows={top.map((r) => ({
+                  key: r.person.id,
+                  avatar: <Avatar name={r.person.aka} avatar={r.person.avatar} size="sm" presence={presenceState(presence.get(r.person.id))} />,
+                  name: r.person.aka,
+                  value: r.balance,
+                  hint: r.overdueDays > 0 ? `เลยกำหนด ${r.overdueDays} วัน` : undefined,
+                }))}
+                onPick={(id) => navigate(`/borrowers/${id}`)}
+              />
+            </Card>
+          )}
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <Pill onClick={() => navigate('/building')}>🏯 เรือนน้ำชา</Pill>
@@ -370,7 +395,7 @@ function BorrowerTile({ r, index }: { r: Row; index: number }) {
             <span className="ml-0.5 text-xs font-semibold opacity-85">% จ่ายแล้ว</span>
           </span>
           <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/30">
-            <div className="h-full rounded-full bg-white" style={{ width: `${pct}%` }} />
+            <div className="h-full rounded-full bg-white shadow-[0_0_10px_#ffffffb3]" style={{ width: `${pct}%` }} />
           </div>
         </div>
       </div>

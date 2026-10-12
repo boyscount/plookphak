@@ -154,7 +154,7 @@ export function CatBuilding() {
 
       {/* สรุปห้องที่เลือก */}
       {sel && (
-        <div className="rise-in mt-3 rounded-3xl bg-surface p-4">
+        <div className="rise-in mt-3 rounded-3xl card-depth p-4">
           <div className="flex items-center gap-3">
             <Avatar name={sel.person.aka} avatar={sel.person.avatar} size="sm" />
             <div className="min-w-0 flex-1">
