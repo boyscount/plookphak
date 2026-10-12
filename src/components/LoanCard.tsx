@@ -1,5 +1,5 @@
 import { fmtBaht, fmtDate, fmtDateTime, fmtDuration } from '../lib/format'
-import { dailyHistory, dailyPlan, loanSnapshot, type LoanState } from '../lib/loanMath'
+import { dailyHistory, dailyPlan, loanSnapshot, type LoanState, penaltyWords } from '../lib/loanMath'
 import { CountUpBaht, DayStrip, MONEY_COLORS, StackedBar } from './charts'
 import { PetalShower, SakuraTree } from './SakuraTree'
 import { useNow } from '../lib/queries'
@@ -158,10 +158,10 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
             )}
             <Row label="วันครบคืนเงินต้น" value={fmtDateTime(loan.due_at)} />
             <Row label="เงินต้นคงเหลือ" value={plan.principalCovered ? <span className="text-ok">คืนแล้ว</span> : fmtBaht(Number(loan.principal))} />
-            <Row label="ค่าปรับต่อชั่วโมง" value={fmtBaht(Number(loan.hourly_penalty))} />
+            <Row label={`ค่าปรับ${penaltyWords(loan).per}`} value={fmtBaht(Number(loan.hourly_penalty))} />
             {s.penalty > 0 && (
               <Row
-                label={`ค่าปรับสะสม (${s.hours} ชม.)`}
+                label={`ค่าปรับสะสม (${s.hours} ${penaltyWords(loan).short})`}
                 value={<span className="text-danger">{fmtBaht(s.penalty)}</span>}
               />
             )}
@@ -179,8 +179,8 @@ export function LoanCard({ loan, actions, live = true }: { loan: Loan; actions?:
           <>
             <Row label="รวมดอกเบี้ยที่ต้องชำระ" value={<>{fmtBaht(s.interest)} <span className="text-sm text-muted">({s.days} วัน)</span></>} />
             <Row label="วันครบกำหนดชำระ" value={fmtDateTime(loan.due_at)} />
-            <Row label="ค่าปรับต่อชั่วโมง" value={fmtBaht(Number(loan.hourly_penalty))} />
-            {s.hours > 0 && <Row label={`ค่าปรับ (${s.hours} ชม.)`} value={<span className="text-danger">{fmtBaht(s.penalty)}</span>} />}
+            <Row label={`ค่าปรับ${penaltyWords(loan).per}`} value={fmtBaht(Number(loan.hourly_penalty))} />
+            {s.hours > 0 && <Row label={`ค่าปรับ (${s.hours} ${penaltyWords(loan).short})`} value={<span className="text-danger">{fmtBaht(s.penalty)}</span>} />}
             <Row label="จำนวนเงินที่ต้องชำระ" value={fmtBaht(s.total)} />
             {s.approved > 0 && <Row label="ชำระแล้ว" value={<span className="text-ok">− {fmtBaht(s.approved)}</span>} />}
             {s.pending > 0 && <Row label="รอตรวจสลิป" value={<span className="text-sky-700">− {fmtBaht(s.pending)}</span>} />}

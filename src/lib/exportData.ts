@@ -2,7 +2,7 @@
 // ทำในเบราว์เซอร์ทั้งหมด ไม่ส่งข้อมูลไปเซิร์ฟเวอร์อื่น
 import type { CellObject, Sheet } from 'write-excel-file/browser'
 import { fmtDateTime } from './format'
-import { dailyPlan, loanSnapshot } from './loanMath'
+import { dailyPlan, loanSnapshot, penaltyWords } from './loanMath'
 import { must } from './queries'
 import { supabase } from './supabase'
 import { memberStats, TIER_LABEL, tierOf } from './tier'
@@ -83,7 +83,7 @@ export async function exportExcel(includeAudit: boolean) {
 
   const loanRows = [
     head([
-      'ผู้ยืม', 'รูปแบบดอก', 'เงินต้น', 'วันที่ยืม', 'วันเริ่มคิดดอก', 'ดอก/วัน', 'ตัดรอบ', 'วันครบกำหนด', 'ค่าปรับ/ชม.',
+      'ผู้ยืม', 'รูปแบบดอก', 'เงินต้น', 'วันที่ยืม', 'วันเริ่มคิดดอก', 'ดอก/วัน', 'ตัดรอบ', 'วันครบกำหนด', 'ค่าปรับ', 'ปรับต่อ',
       'วันคิดดอก', 'ดอกสะสม', 'ค่าปรับสะสม', 'ยอดรวม', 'จ่ายแล้ว (อนุมัติ)', 'รอตรวจ', 'คงเหลือ', 'จ่ายดอกถึงวันที่', 'สถานะ', 'หมายเหตุ',
     ]),
     ...snaps.map(({ l, s }) => [
@@ -96,6 +96,7 @@ export async function exportExcel(includeAudit: boolean) {
       { value: l.interest_mode === 'daily' ? (l.daily_cutoff ?? '').slice(0, 5) : '' },
       { value: fmtDateTime(l.due_at) },
       { value: Number(l.hourly_penalty) },
+      { value: penaltyWords(l).short },
       { value: s.days },
       { value: s.interest },
       { value: s.penalty },

@@ -33,7 +33,8 @@ const FIELD_LABEL: Record<string, string> = {
   interest_start_on: 'เริ่มคิดดอก',
   daily_interest: 'ดอก/วัน',
   due_at: 'วันครบกำหนด',
-  hourly_penalty: 'ค่าปรับ/ชม.',
+  hourly_penalty: 'ค่าปรับ',
+  penalty_unit: 'หน่วยค่าปรับ',
   interest_mode: 'แบบดอก',
   daily_cutoff: 'ตัดรอบ',
   note: 'หมายเหตุ',
@@ -70,6 +71,7 @@ const MONEY_FIELDS = ['amount', 'principal', 'daily_interest', 'hourly_penalty']
 export function showValue(k: string, v: unknown): string {
   if (v === null || v === undefined || v === '') return '–'
   if (k === 'promptpay_payload') return 'อัปโหลดแล้ว'
+  if (k === 'penalty_unit') return v === 'day' ? 'ต่อวัน' : 'ต่อชั่วโมง'
   const str = String(v)
   if (VALUE_LABEL[str]) return VALUE_LABEL[str]
   if (/^\d{4}-\d{2}-\d{2}T/.test(str)) return fmtDateTime(str)

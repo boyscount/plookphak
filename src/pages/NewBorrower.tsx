@@ -3,9 +3,8 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { RoundButton } from '../components/AppShell'
 import { BackIcon } from '../components/icons'
-import { emptyLoanDraft, LoanFields, parseLoanDraft } from '../components/LoanForm'
+import { emptyLoanDraft, LoanFields, parseLoanDraft, writeLoan } from '../components/LoanForm'
 import { Card, ErrorText, Field, Input, Pill } from '../components/ui'
-import { must } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 
 /** admin เพิ่มผู้ยืม: สร้างบัญชี + รายการยืมแรกในหน้าเดียว */
@@ -31,7 +30,7 @@ export function NewBorrower() {
         p_role: 'borrower',
       })
       if (error) throw error
-      if (loan) await must(supabase.from('loans').insert({ ...loan, borrower_id: id }))
+      if (loan) await writeLoan({ ...loan, borrower_id: id }, (r) => supabase.from('loans').insert(r))
       qc.invalidateQueries()
       navigate(`/borrowers/${id}`, { replace: true })
     } catch (e) {

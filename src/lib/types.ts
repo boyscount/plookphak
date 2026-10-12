@@ -36,7 +36,10 @@ export type Loan = {
   interest_start_on: string
   daily_interest: number
   due_at: string
+  /** ยอดค่าปรับต่อหน่วย (ชั่วโมง หรือวัน ตาม penalty_unit) */
   hourly_penalty: number
+  /** แบบพร้อมเงินต้น: hour | day (รายการเก่า/ยังไม่รัน SQL = ไม่มีค่า → hour) */
+  penalty_unit?: 'hour' | 'day'
   interest_mode: 'with_principal' | 'daily'
   daily_cutoff: string
   note: string | null

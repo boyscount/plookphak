@@ -10,6 +10,21 @@ export type LoanTerms = {
   hourly_penalty: number
   interest_mode?: InterestMode // ไม่ระบุ = with_principal
   daily_cutoff?: string // 'HH:MM' หรือ 'HH:MM:SS' เวลาไทย, ใช้กับแบบรายวัน
+  /** แบบพร้อมเงินต้น: ปรับต่อชั่วโมง (เดิม) หรือต่อวัน — ยอดต่อหน่วยอยู่ใน hourly_penalty. ไม่ระบุ = hour */
+  penalty_unit?: PenaltyUnit
+}
+
+export type PenaltyUnit = 'hour' | 'day'
+
+/** ข้อความหน่วยค่าปรับ: per = 'ต่อวัน' | 'ต่อชั่วโมง', short = 'วัน' | 'ชม.' */
+export function penaltyWords(loan: LoanTerms) {
+  const day = penaltyUnitOf(loan) === 'day'
+  return { per: day ? 'ต่อวัน' : 'ต่อชั่วโมง', short: day ? 'วัน' : 'ชม.', slash: day ? '/วัน' : '/ชม.' }
+}
+
+/** หน่วยค่าปรับที่ใช้จริง: แบบรายวันปรับรายชั่วโมงเสมอ */
+export function penaltyUnitOf(loan: LoanTerms): PenaltyUnit {
+  return loan.interest_mode !== 'daily' && loan.penalty_unit === 'day' ? 'day' : 'hour'
 }
 
 export type PaymentLike = {
@@ -100,9 +115,15 @@ function dailyArrears(loan: LoanTerms, payments: PaymentLike[], atMs: number) {
   return { hours, since, baseDue: round2(base), paid: round2(paid) }
 }
 
-/** จำนวนชั่วโมงเต็มที่เลยกำหนด (แบบดอกพร้อมเงินต้น): ครบ 1 ชม. แรกจึงเริ่มปรับ */
+/**
+ * จำนวนครั้งที่โดนปรับ (แบบดอกพร้อมเงินต้น)
+ * - ต่อชั่วโมง: ชั่วโมงเต็มที่เลยกำหนด (ครบ 1 ชม. แรกจึงเริ่มปรับ)
+ * - ต่อวัน: เลยกำหนดปุ๊บนับ 1 ทันที แล้ว +1 ทุก 24 ชม.
+ */
 export function penaltyHours(loan: LoanTerms, atMs: number): number {
-  return Math.max(0, Math.floor((atMs - Date.parse(loan.due_at)) / HOUR))
+  const late = atMs - Date.parse(loan.due_at)
+  if (penaltyUnitOf(loan) === 'day') return late > 0 ? Math.floor(late / DAY) + 1 : 0
+  return Math.max(0, Math.floor(late / HOUR))
 }
 
 export function owedAt(loan: LoanTerms, payments: PaymentLike[], atMs: number) {
@@ -114,6 +135,7 @@ export function owedAt(loan: LoanTerms, payments: PaymentLike[], atMs: number) {
   const penalty = round2(Number(loan.hourly_penalty) * hours)
   return {
     days,
+    /** จำนวนครั้งที่ปรับ — ชั่วโมง หรือวัน ตาม penaltyUnitOf(loan) */
     hours,
     interest,
     penalty,
@@ -160,9 +182,11 @@ export function loanSnapshot(loan: LoanTerms, payments: PaymentLike[], nowMs: nu
   const lateSince = settled !== null ? null : daily ? (owed.arrears?.since ?? null) : nowMs >= dueMs ? dueMs : null
 
   let state: LoanState
+  const unit = penaltyUnitOf(loan)
+  const step = unit === 'day' ? DAY : HOUR
   if (settled !== null) state = pending > 0 ? 'pending_review' : 'paid'
   else if (lateSince === null) state = 'not_due'
-  else if (nowMs < lateSince + HOUR) state = 'grace'
+  else if (unit === 'hour' && nowMs < lateSince + HOUR) state = 'grace'
   else state = 'overdue'
 
   const next = daily && settled === null ? nextDailyDue(loan, owed.arrears?.paid ?? 0, nowMs) : null
@@ -184,7 +208,9 @@ export function loanSnapshot(loan: LoanTerms, payments: PaymentLike[], nowMs: nu
     /** แบบรายวัน: รอบถัดไป */
     nextDue: next,
     /** ms ถึงการปรับครั้งถัดไป เมื่อกำลังค้าง */
-    msToNextPenalty: lateSince !== null ? HOUR - ((nowMs - lateSince) % HOUR) : null,
+    msToNextPenalty: lateSince !== null ? step - ((nowMs - lateSince) % step) : null,
+    /** หน่วยค่าปรับ: hour | day */
+    penaltyUnit: unit,
   }
 }
 

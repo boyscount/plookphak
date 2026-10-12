@@ -1,7 +1,7 @@
 // ไทม์ไลน์ของรายการยืม: ยืม → เริ่มคิดดอก → จ่าย → ครบกำหนด → ค่าปรับ → ปิดยอด
 // ช่วยให้เห็นว่ายอดมาจากไหน ลดการเถียงกันเรื่องตัวเลข
 import { fmtBaht, fmtDate, fmtDateTime } from '../lib/format'
-import { loanSnapshot } from '../lib/loanMath'
+import { loanSnapshot, penaltyWords } from '../lib/loanMath'
 import type { Loan } from '../lib/types'
 import { cx } from './ui'
 
@@ -65,12 +65,14 @@ export function loanEvents(loan: Loan, now: number): TimelineEvent[] {
   })
 
   if (s.lateSince !== null && Number(loan.hourly_penalty) > 0) {
-    const start = s.lateSince + 3_600_000
+    const w = penaltyWords(loan)
+    // ต่อชั่วโมง: เริ่มหลังเลยครบ 1 ชม. · ต่อวัน: เลยปุ๊บปรับทันที
+    const start = s.lateSince + (s.penaltyUnit === 'day' ? 0 : 3_600_000)
     ev.push({
       at: start,
       icon: '⏰',
-      title: start > now ? `ค่าปรับจะเริ่ม ${fmtBaht(Number(loan.hourly_penalty))}/ชม.` : `เริ่มคิดค่าปรับ ${fmtBaht(Number(loan.hourly_penalty))}/ชม.`,
-      detail: `${fmtDateTime(start)}${s.penalty > 0 ? ` · สะสม ${fmtBaht(s.penalty)} (${s.hours} ชม.)` : ''}`,
+      title: start > now ? `ค่าปรับจะเริ่ม ${fmtBaht(Number(loan.hourly_penalty))}${w.slash}` : `เริ่มคิดค่าปรับ ${fmtBaht(Number(loan.hourly_penalty))}${w.slash}`,
+      detail: `${fmtDateTime(start)}${s.penalty > 0 ? ` · สะสม ${fmtBaht(s.penalty)} (${s.hours} ${w.short})` : ''}`,
       tone: 'danger',
       future: start > now,
     })

@@ -169,3 +169,53 @@ describe('เลือกวันจ่ายดอกรายวัน', () =
     expect(p.amountThrough(d11.index)).toBe(1550)
   })
 })
+
+describe('ค่าปรับต่อวัน (แบบพร้อมเงินต้น)', () => {
+  // ตัวอย่างจากเจ้าของ: ยืม 2000 ดอกวันละ 160 ปรับวันละ 160 ครบกำหนด 11 พ.ย. 18:00
+  const loan = {
+    principal: 2000,
+    interest_start_on: '2026-11-01',
+    daily_interest: 160,
+    due_at: '2026-11-11T11:00:00Z', // 18:00 ไทย
+    hourly_penalty: 160,
+    interest_mode: 'with_principal' as const,
+    penalty_unit: 'day' as const,
+  }
+  const at = (s: string) => Date.parse(s)
+
+  it('ตรงเวลาครบกำหนดพอดี ยังไม่ปรับ', () => {
+    const o = owedAt(loan, [], at('2026-11-11T11:00:00Z'))
+    expect([o.days, o.hours, o.penalty, o.total]).toEqual([11, 0, 0, 3760])
+  })
+  it('เลยไป 1 นาที ปรับวันแรกทันที (ดอกยังเดินต่อ)', () => {
+    const o = owedAt(loan, [], at('2026-11-11T11:01:00Z'))
+    expect([o.hours, o.penalty, o.total]).toEqual([1, 160, 3920])
+  })
+  it('มาจ่าย 12 พ.ย. 10:00 = ดอก 12 วัน + ปรับ 1 วัน', () => {
+    const o = owedAt(loan, [], at('2026-11-12T03:00:00Z'))
+    expect([o.days, o.hours, o.total]).toEqual([12, 1, 2000 + 1920 + 160])
+  })
+  it('ครบ 24 ชม. หลังกำหนด ปรับวันที่สอง', () => {
+    expect(owedAt(loan, [], at('2026-11-12T10:59:59Z')).hours).toBe(1)
+    expect(owedAt(loan, [], at('2026-11-12T11:00:00Z')).hours).toBe(2)
+  })
+  it('ไม่มีช่วงผ่อนผัน และนับถอยหลังถึงรอบปรับถัดไปเป็นวัน', () => {
+    const s = loanSnapshot(loan, [], at('2026-11-11T17:00:00Z')) // เลยมา 6 ชม.
+    expect(s.state).toBe('overdue')
+    expect(s.penaltyUnit).toBe('day')
+    expect(s.msToNextPenalty).toBe(18 * 3_600_000)
+  })
+  it('ส่งสลิปครบ หยุดนับค่าปรับที่เวลาส่ง', () => {
+    const pays = [{ amount: 4080, paid_at: '2026-11-12T03:00:00Z', status: 'pending' as const }]
+    expect(settledAt(loan, pays)).toBe(at('2026-11-12T03:00:00Z'))
+    expect(loanSnapshot(loan, pays, at('2026-11-20T00:00:00Z')).balance).toBe(0)
+  })
+  it('แบบรายวันไม่สนค่า penalty_unit — ปรับรายชั่วโมงเสมอ', () => {
+    const daily = { ...loan, interest_mode: 'daily' as const, daily_cutoff: '17:00' }
+    expect(loanSnapshot(daily, [], at('2026-11-02T00:00:00Z')).penaltyUnit).toBe('hour')
+  })
+  it('รายการเก่าที่ไม่มี penalty_unit = รายชั่วโมงเหมือนเดิม', () => {
+    const old = { ...loan, penalty_unit: undefined }
+    expect(owedAt(old, [], at('2026-11-11T13:30:00Z')).hours).toBe(2)
+  })
+})

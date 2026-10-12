@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { DarkPill, ProfileHeader, RoundButton } from '../components/AppShell'
 import { BackIcon, CashIcon, KeyIcon, PlusIcon } from '../components/icons'
 import { LoanCard } from '../components/LoanCard'
-import { draftFromLoan, emptyLoanDraft, LoanFields, parseLoanDraft, type LoanDraft } from '../components/LoanForm'
+import { draftFromLoan, emptyLoanDraft, LoanFields, parseLoanDraft, writeLoan, type LoanDraft } from '../components/LoanForm'
 import { CashSheet, PaymentList } from '../components/Payments'
 import { Card, cx, EmptyState, ErrorText, Field, Input, Pill, Row, Sheet, Tabs } from '../components/ui'
 import { fmtBaht, fmtDateTime } from '../lib/format'
@@ -188,8 +188,8 @@ function LoanSheet({ borrowerId, loan, onClose }: { borrowerId: string; loan: Lo
     if (typeof parsed === 'string') return setError(parsed)
     setBusy(true)
     try {
-      if (loan) await must(supabase.from('loans').update(parsed).eq('id', loan.id))
-      else await must(supabase.from('loans').insert({ ...parsed, borrower_id: borrowerId }))
+      if (loan) await writeLoan(parsed, (r) => supabase.from('loans').update(r).eq('id', loan.id))
+      else await writeLoan({ ...parsed, borrower_id: borrowerId }, (r) => supabase.from('loans').insert(r))
       refresh()
       onClose()
     } catch (e) {

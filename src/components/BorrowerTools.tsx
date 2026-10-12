@@ -2,7 +2,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { fmtBaht, fmtDate, fmtDateTime, fromLocalInput, toLocalInput, todayBkk, timeAgo } from '../lib/format'
-import { loanSnapshot, owedAt } from '../lib/loanMath'
+import { loanSnapshot, owedAt, penaltyWords } from '../lib/loanMath'
 import { must, useLoanRequests, type LoanRequest } from '../lib/queries'
 import { errorText, supabase } from '../lib/supabase'
 import type { Loan } from '../lib/types'
@@ -99,7 +99,7 @@ export function PayoffCalculatorSheet({ loans, open, onClose }: { loans: Loan[];
             <Row label="เงินต้น" value={fmtBaht(Number(loan.principal))} />
             <Row label={`ดอกเบี้ย (${result.owed.days} วัน)`} value={fmtBaht(result.owed.interest)} />
             {result.owed.penalty > 0 && (
-              <Row label={`ค่าปรับ (${result.owed.hours} ชม.)`} value={<span className="text-danger">{fmtBaht(result.owed.penalty)}</span>} />
+              <Row label={`ค่าปรับ (${result.owed.hours} ${penaltyWords(loan).short})`} value={<span className="text-danger">{fmtBaht(result.owed.penalty)}</span>} />
             )}
             {result.snap.approved + result.snap.pending > 0 && (
               <Row label="จ่ายไปแล้ว" value={<span className="text-ok">− {fmtBaht(result.snap.approved + result.snap.pending)}</span>} />
