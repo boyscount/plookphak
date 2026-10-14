@@ -1,7 +1,9 @@
 // ฉากหน้า login: เรือนญี่ปุ่นกลางทะเลสาบ ซ้อนเป็นชั้น (parallax) — ภูเขา, หมอก, เรือน, กิ่งซากุระ, กลีบร่วง
 // กลางวัน/กลางคืนตามเวลาไทย · เอียงมือถือหรือขยับเมาส์แล้วชั้นต่าง ๆ เลื่อนเหลื่อมกัน
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import type { Weather } from '../lib/weather'
 import { Petals } from './SakuraTree'
+import { WeatherFx } from './WeatherFx'
 
 function isNightBkk() {
   const h = new Date(Date.now() + 7 * 3_600_000).getUTCHours()
@@ -78,8 +80,19 @@ function ridge(pts: [number, number][], left: number, right: number, bottom: num
 const FAR: [number, number][] = [[0, 150], [40, 120], [90, 150], [150, 100], [210, 140], [270, 96], [330, 136], [380, 118]]
 const MID: [number, number][] = [[0, 178], [60, 145], [120, 172], [190, 135], [250, 168], [320, 140], [370, 165]]
 
-export function LoginScene({ children }: { children?: ReactNode }) {
-  const night = isNightBkk()
+/** ความหม่นของฟ้าตามอากาศจริง 0..1 */
+function overcastOf(w: Weather | null | undefined) {
+  if (!w) return 0
+  const base = { storm: 0.62, rain: 0.45, drizzle: 0.32, fog: 0.3, cloudy: 0.28, partly: 0.1, clear: 0 }[w.kind]
+  return Math.min(0.7, base + (w.kind === 'clear' ? 0 : w.cloud * 0.08))
+}
+
+export function LoginScene({ children, weather, demo }: { children?: ReactNode; weather?: Weather | null; demo?: boolean }) {
+  // กลางวัน/กลางคืนตามพระอาทิตย์จริงของที่อยู่ที่เลือก (ยังโหลดไม่เสร็จใช้เวลาไทย)
+  const night = weather ? !weather.isDay : isNightBkk()
+  const overcast = overcastOf(weather)
+  const raining = (weather?.rain ?? 0) > 0
+  const fog = weather?.kind === 'fog'
   const c = night ? NIGHT : DAY
   const root = useRef<HTMLDivElement>(null)
   // ความกว้างของฉากในหน่วย viewBox ตามสัดส่วนจอ: ความสูงพอดี 300 เสมอ เรือนอยู่กลาง ไม่ถูกตัดหัวบนจอกว้าง
@@ -146,11 +159,13 @@ export function LoginScene({ children }: { children?: ReactNode }) {
         </defs>
 
         <rect x={left} width={span} height="300" fill="url(#ls-sky)" />
-        {night &&
+        {night && overcast < 0.4 &&
           Array.from({ length: Math.ceil((30 * span) / 400) }, (_, i) => (
             <circle key={i} className="cover-star" cx={left + ((i * 53) % span)} cy={(i * 29) % 120} r={i % 4 ? 0.8 : 1.4} fill="#fff" style={{ animationDelay: `${(i % 7) * 0.4}s` }} />
           ))}
-        {night && <circle cx="320" cy="50" r="14" fill="#fff4d6" opacity=".9" />}
+        {night && overcast < 0.4 && <circle cx="320" cy="50" r="14" fill="#fff4d6" opacity=".9" />}
+        {/* ฟ้าหม่นตามเมฆ/ฝนจริง */}
+        {overcast > 0 && <rect x={left} width={span} height="300" fill={night ? '#05070f' : '#5d6878'} opacity={overcast} />}
 
         <Layer depth={2}>
           <path d={ridge(FAR, left, right, 200)} fill={c.far} />
@@ -158,6 +173,7 @@ export function LoginScene({ children }: { children?: ReactNode }) {
         <Layer depth={4}>
           <path d={ridge(MID, left, right, 210)} fill={c.mid} />
           <rect x={left - 40} y="160" width={span + 80} height="40" fill={c.mist} filter="url(#ls-blur)" />
+          {fog && <rect x={left - 40} y="110" width={span + 80} height="150" fill={c.mist} opacity=".8" filter="url(#ls-blur)" />}
         </Layer>
 
         {/* ทะเลสาบ */}
@@ -215,7 +231,8 @@ export function LoginScene({ children }: { children?: ReactNode }) {
           </g>
         </Layer>
       </svg>
-      <Petals count={12} className="absolute inset-0" short />
+      <WeatherFx rain={weather?.rain ?? 0} wind={weather?.wind ?? 0} lightning={!!weather?.lightning} night={night} lakeTop={196 / 300} demo={demo} />
+      {!raining && <Petals count={12} className="absolute inset-0" short />}
       <div className="relative">{children}</div>
     </div>
   )
