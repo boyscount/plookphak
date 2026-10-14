@@ -2,10 +2,8 @@
 // + ลองดูเอฟเฟกต์ฝน/พายุ (เฉพาะตอนนี้ ไม่จำไว้)
 import { useState } from 'react'
 import { PROVINCES } from '../lib/provinces'
-import { placeFromCoords, searchPlaces, type Place, type Weather } from '../lib/weather'
+import { placeFromCoords, searchPlaces, type Place, type Preview, type Weather } from '../lib/weather'
 import { cx, ErrorText, Field, Input, Pill, Sheet } from './ui'
-
-export type Preview = 'live' | 'rain' | 'storm'
 
 export function WeatherPlaceSheet({
   open,

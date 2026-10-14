@@ -3,8 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { GoldCard } from '../components/GoldCard'
 import { LoginScene } from '../components/LoginScene'
 import { ErrorText, Field, Input, Logo, Pill } from '../components/ui'
-import { WeatherPlaceSheet, type Preview } from '../components/WeatherPlaceSheet'
-import { usePlace, useWeather, type Weather } from '../lib/weather'
+import { WeatherPlaceSheet } from '../components/WeatherPlaceSheet'
+import { applyPreview, usePlace, useWeather, type Preview } from '../lib/weather'
 import { errorText, supabase, usernameToEmail } from '../lib/supabase'
 
 export function Login() {
@@ -23,13 +23,7 @@ export function Login() {
   const { data: live } = useWeather(place)
   const [placeOpen, setPlaceOpen] = useState(false)
   const [preview, setPreview] = useState<Preview>('live')
-  const weather: Weather | null = live
-    ? preview === 'rain'
-      ? { ...live, kind: 'rain', label: 'ฝนตก (ตัวอย่าง)', icon: '🌧️', rain: 0.55, lightning: false, cloud: 0.9 }
-      : preview === 'storm'
-        ? { ...live, kind: 'storm', label: 'พายุฝนฟ้าคะนอง (ตัวอย่าง)', icon: '⛈️', rain: 0.85, lightning: true, cloud: 1, wind: Math.max(live.wind, 25) }
-        : live
-    : null
+  const weather = applyPreview(live, preview)
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()

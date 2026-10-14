@@ -111,6 +111,17 @@ export function useWeather(place: Place) {
   })
 }
 
+export type Preview = 'live' | 'rain' | 'storm'
+
+/** ลองดูเอฟเฟกต์: แทนอากาศจริงด้วยฝน/พายุตัวอย่าง (ไม่จำไว้) */
+export function applyPreview(live: Weather | undefined, preview: Preview): Weather | null {
+  if (!live) return null
+  if (preview === 'rain') return { ...live, kind: 'rain', label: 'ฝนตก (ตัวอย่าง)', icon: '🌧️', rain: 0.55, lightning: false, cloud: 0.9 }
+  if (preview === 'storm')
+    return { ...live, kind: 'storm', label: 'พายุฝนฟ้าคะนอง (ตัวอย่าง)', icon: '⛈️', rain: 0.85, lightning: true, cloud: 1, wind: Math.max(live.wind, 25) }
+  return live
+}
+
 // ---------------------------------------------------------------------------
 // ค้นหาสถานที่ (ไทย ระดับตำบล/อำเภอ) — Nominatim: ห้ามยิงทุกตัวอักษร จึงค้นเมื่อกดค้นหาเท่านั้น
 // ---------------------------------------------------------------------------

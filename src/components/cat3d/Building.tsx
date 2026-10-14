@@ -1,13 +1,15 @@
 // เรือนน้ำชากลางทะเลสาบของ admin: ผู้ยืม 1 คน = 1 ชั้น — โหลดแยก (lazy)
 // โคมหน้าห้องบอกสถานะ (ทอง = ปกติ, แดงกะพริบ = ค้าง, ดับ = ปิดยอด) · เรือมาจอดเมื่อมีสลิปรอตรวจ
-// กลางวัน/กลางคืนตามเวลาไทย
+// กลางวัน/กลางคืน ฝน หมอก ฟ้าแลบ ตามอากาศจริงของที่อยู่ที่เลือก (ยังโหลดไม่เสร็จใช้เวลาไทย)
 import { Html, OrbitControls } from '@react-three/drei'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib'
 import type { CatMood } from '../../lib/catStats'
+import type { Weather } from '../../lib/weather'
 import { Cat } from './Cat'
+import { Lightning3D, Rain3D } from './Weather3D'
 
 export const FLOOR_H = 1.7
 const W = 4.2
@@ -369,6 +371,8 @@ export default function Building({
   onBoat,
   total,
   rate,
+  weather,
+  demo,
 }: {
   floors: FloorInfo[]
   selectedId: string | null
@@ -377,9 +381,19 @@ export default function Building({
   onBoat?: () => void
   total: string
   rate: number
+  weather?: Weather | null
+  demo?: boolean
 }) {
-  const night = useMemo(isNightBkk, [])
+  const hourNight = useMemo(isNightBkk, [])
+  const night = weather ? !weather.isDay : hourNight
   const t = night ? THEME.night : THEME.day
+  // เมฆ/ฝน/หมอก: ฟ้าหม่น แสงลด หมอกเข้ามาใกล้
+  const overcast = weather ? { storm: 0.62, rain: 0.45, drizzle: 0.32, fog: 0.35, cloudy: 0.28, partly: 0.08, clear: 0 }[weather.kind] : 0
+  const sky = useMemo(() => '#' + new THREE.Color(t.sky).lerp(new THREE.Color(night ? '#05070f' : '#7d8794'), overcast).getHexString(), [t.sky, night, overcast])
+  const fogColor = useMemo(() => '#' + new THREE.Color(t.fog).lerp(new THREE.Color(night ? '#070a14' : '#8d969f'), overcast).getHexString(), [t.fog, night, overcast])
+  const fogFar = weather?.kind === 'fog' ? 20 : 34 - overcast * 12
+  const dim = 1 - overcast * 0.5
+  const rain = weather?.rain ?? 0
   const top = BASE + floors.length * FLOOR_H
   const plates = useRef<(HTMLElement | null)[]>([])
   const pending = floors.reduce((n, f) => n + f.pendingSlips, 0)
@@ -387,13 +401,13 @@ export default function Building({
   return (
     <div className="relative h-full w-full">
       <Canvas dpr={[1, 1.5]} camera={{ position: [9.5, focusY + 3.6, 13], fov: 40 }} onPointerMissed={() => onPick('')}>
-        <color attach="background" args={[t.sky]} />
-        <fog attach="fog" args={[t.fog, 12, 34]} />
-        <hemisphereLight args={[night ? '#5a6aa8' : '#ffffff', night ? '#0b1430' : '#7fb0ae', t.light]} />
-        <directionalLight position={[5, top + 6, 6]} intensity={night ? 0.55 : 1.2} color={night ? '#9fb0ff' : '#ffffff'} />
+        <color attach="background" args={[sky]} />
+        <fog attach="fog" args={[fogColor, weather?.kind === 'fog' ? 6 : 12, fogFar]} />
+        <hemisphereLight args={[night ? '#5a6aa8' : '#ffffff', night ? '#0b1430' : '#7fb0ae', t.light * dim]} />
+        <directionalLight position={[5, top + 6, 6]} intensity={(night ? 0.55 : 1.2) * (1 - overcast * 0.8)} color={night ? '#9fb0ff' : '#ffffff'} />
         {/* แสงโคมอุ่น ๆ หน้าเรือนตอนกลางคืน */}
         {night && <pointLight position={[0, top * 0.5, D + 2]} color="#ffc878" intensity={6} distance={14} />}
-        {night && (
+        {night && overcast < 0.3 && (
           <mesh position={[-9, top + 7, -14]}>
             <sphereGeometry args={[0.9, 16, 12]} />
             <meshBasicMaterial color="#fff4d6" />
@@ -439,7 +453,8 @@ export default function Building({
         <SakuraIsle position={[-5.2, -0.1, 1.5]} scale={1.1} night={night} />
         <SakuraIsle position={[5.6, -0.1, -0.8]} scale={1.25} night={night} />
         <SakuraIsle position={[-4, -0.1, -4.5]} scale={0.9} night={night} />
-        <FallingPetals night={night} />
+        {rain > 0 ? <Rain3D intensity={rain} wind={weather?.wind ?? 0} night={night} /> : <FallingPetals night={night} />}
+        {weather?.lightning && <Lightning3D sky={sky} demo={demo} />}
         <Boat docked={pending > 0} onClick={onBoat} night={night} />
 
         <OrbitControls

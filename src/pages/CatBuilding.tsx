@@ -11,6 +11,8 @@ import { catLine, catStats } from '../lib/catStats'
 import { fmtBaht } from '../lib/format'
 import { loanSnapshot } from '../lib/loanMath'
 import { useLoans, useNow, useProfiles } from '../lib/queries'
+import { applyPreview, usePlace, useWeather, type Preview } from '../lib/weather'
+import { WeatherPlaceSheet } from '../components/WeatherPlaceSheet'
 import { SceneSkeleton } from '../components/Skeleton'
 
 const Building = lazy(() => import('../components/cat3d/Building'))
@@ -26,6 +28,12 @@ export function CatBuilding() {
   const now = useNow(30_000)
   const [selected, setSelected] = useState<string | null>(null)
   const [focus, setFocus] = useState(0)
+  // อากาศจริง (ที่อยู่เดียวกับหน้า login จำไว้ในเครื่อง)
+  const [place, setPlace] = usePlace()
+  const { data: live } = useWeather(place)
+  const [preview, setPreview] = useState<Preview>('live')
+  const [placeOpen, setPlaceOpen] = useState(false)
+  const weather = applyPreview(live, preview)
 
   const rows = useMemo(() => {
     return (people ?? [])
@@ -81,6 +89,10 @@ export function CatBuilding() {
           <p className="text-sm text-muted">
             {floors.length} ห้อง · เลยกำหนด {floors.filter((f) => f.overdue).length} ห้อง
           </p>
+          <button type="button" onClick={() => setPlaceOpen(true)} className="mt-1 max-w-full truncate rounded-full bg-pill px-3 py-1 text-xs font-semibold">
+            📍 {place.name}
+            {weather && ` · ${weather.icon} ${weather.label} ${weather.temp}°`} ›
+          </button>
         </div>
       </div>
 
@@ -120,6 +132,8 @@ export function CatBuilding() {
               onPick={pick}
               total={fmtBaht(outstanding)}
               rate={rate}
+              weather={weather}
+              demo={preview === 'storm'}
             />
           </Suspense>
         )}
@@ -152,6 +166,16 @@ export function CatBuilding() {
         </li>
         <li>⛵ เรือจอด = มีสลิปรอตรวจ</li>
       </ul>
+
+      <WeatherPlaceSheet
+        open={placeOpen}
+        onClose={() => setPlaceOpen(false)}
+        place={place}
+        onPlace={setPlace}
+        weather={weather}
+        preview={preview}
+        onPreview={setPreview}
+      />
 
       {/* สรุปห้องที่เลือก */}
       {sel && (
